@@ -27,6 +27,7 @@ pipeline_tag: reinforcement-learning
 [![Research Paper](https://img.shields.io/badge/%F0%9F%93%84%20Paper-PDF%20(6%20Pages)-red)](paper/paper.pdf)
 [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97-Hugging%20Face-yellow)](https://huggingface.co/tahamajs/AsyncTensorRLHF)
 [![Hugging Face Space](https://img.shields.io/badge/%F0%9F%A4%97%20Space-Hooshaai%2FAsyncTensorRLHF-blue)](https://huggingface.co/spaces/Hooshaai/AsyncTensorRLHF)
+[![GitHub Pages](https://img.shields.io/badge/%F0%9F%8C%90%20GitHub%20Pages-Live%20Explorer-blueviolet)](https://hooshaai.github.io/AsyncTensorRLHF/)
 [![Trained Model](https://img.shields.io/badge/%F0%9F%A4%97%20Model-Qwen2.5--0.5B--AsyncTensorRLHF-purple)](https://huggingface.co/Hooshaai/Qwen2.5-0.5B-AsyncTensorRLHF)
 [![GitHub Repository](https://img.shields.io/badge/GitHub-AsyncTensorRLHF-181717.svg?logo=github)](https://github.com/Hooshaai/AsyncTensorRLHF)
 
