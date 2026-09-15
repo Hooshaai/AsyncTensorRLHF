@@ -1,14 +1,22 @@
 """Prompt queue actor for orchestration.
 
-The queue is a simple Ray actor wrapping an asyncio.Queue. It provides
-`add_prompt` (async) and `get_prompt` (blocking) methods that can be called
-from other Ray actors.
+The queue wraps an asyncio.Queue. It provides
+`add_prompt` (async) and `get_prompt` methods that can be called
+from Ray actors or standalone threads.
 """
 
 import asyncio
-import ray
 
-@ray.remote
+try:
+    import ray
+    ray_remote = ray.remote
+except ImportError:
+    ray = None
+    def ray_remote(cls):
+        return cls
+
+
+@ray_remote
 class PromptQueue:
     def __init__(self, maxsize: int = 0):
         self._queue = asyncio.Queue(maxsize=maxsize)
