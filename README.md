@@ -26,6 +26,7 @@ pipeline_tag: reinforcement-learning
 [![Tests Passing](https://img.shields.io/badge/tests-41%2F41%20passed-brightgreen.svg)](tests/)
 [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97-Hugging%20Face-yellow)](https://huggingface.co/tahamajs/AsyncTensorRLHF)
 [![Hugging Face Space](https://img.shields.io/badge/%F0%9F%A4%97%20Space-Hooshaai%2FAsyncTensorRLHF-blue)](https://huggingface.co/spaces/Hooshaai/AsyncTensorRLHF)
+[![Trained Model](https://img.shields.io/badge/%F0%9F%A4%97%20Model-Qwen2.5--0.5B--AsyncTensorRLHF-purple)](https://huggingface.co/Hooshaai/Qwen2.5-0.5B-AsyncTensorRLHF)
 [![GitHub Repository](https://img.shields.io/badge/GitHub-AsyncTensorRLHF-181717.svg?logo=github)](https://github.com/Hooshaai/AsyncTensorRLHF)
 
 **High-Throughput Asynchronous Reinforcement Learning from Human Feedback (RLHF) with In-VRAM Tensor-Native Rewards & Second-Moment Off-Policy Control (M2PO / GRPO)**
