@@ -9,6 +9,8 @@
 \usepackage{url}
 \usepackage{cite}
 \usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,backgrounds}
 
 \hypersetup{
     colorlinks=true,
@@ -19,7 +21,11 @@
 
 \definecolor{indigo}{RGB}{79, 70, 229}
 \definecolor{emerald}{RGB}{16, 185, 129}
+\definecolor{amber}{RGB}{245, 158, 11}
+\definecolor{rose}{RGB}{244, 63, 94}
 \definecolor{darkslate}{RGB}{30, 41, 59}
+\definecolor{slate}{RGB}{100, 116, 139}
+\definecolor{lightgray}{RGB}{241, 245, 249}
 
 \newtheorem{theorem}{Theorem}
 \newtheorem{lemma}[theorem]{Lemma}
@@ -29,100 +35,129 @@
 \title{\textbf{\Large AsyncTensorRLHF: High-Throughput Asynchronous RLHF with In-VRAM Tensor-Native Rewards and Second-Moment Off-Policy Control}}
 
 \author{
-  \textbf{Taha Majlesi}\thanks{Correspondence to \texttt{tahamajs@gmail.com}. Source code, model weights, and interactive explorer released at \url{https://github.com/Hooshaai/AsyncTensorRLHF} and \url{https://huggingface.co/spaces/Hooshaai/AsyncTensorRLHF}.} \\
-  Hooshaai Research \\
+  \textbf{Taha Majlesi}\thanks{Correspondence to \texttt{tahamajs@gmail.com}. Source code, model checkpoints, and interactive explorer released at \url{https://github.com/Hooshaai/AsyncTensorRLHF} and \url{https://huggingface.co/spaces/Hooshaai/AsyncTensorRLHF}.} \\
+  \textit{Hooshaai Research}
 }
 
-\date{\today}
+\date{March 2026}
 
 \begin{document}
 
 \maketitle
 
 \begin{abstract}
-Reinforcement Learning from Human Feedback (RLHF) and Group Relative Policy Optimization (GRPO) represent the state of the art in aligning large language models (LLMs) and unlocking autonomous chain-of-thought reasoning. However, standard RLHF systems suffer from severe throughput degradation caused by two architectural bottlenecks: (1) \emph{the CPU-GPU memory wall}, wherein tokenized sequences are continually transferred over the PCIe bus to host memory for UTF-8 decoding, regular expression parsing, or rule verification; and (2) \emph{the synchronous lockstep barrier}, which forces autoregressive rollout workers and gradient trainers to execute alternately, introducing cluster-wide GPU idle bubbles of $40\text{--}60\%$. 
+Post-training Reinforcement Learning from Human Feedback (RLHF) and Group Relative Policy Optimization (GRPO) represent foundational paradigms for aligning Large Language Models (LLMs) and eliciting deliberate chain-of-thought mathematical reasoning. However, standard RLHF infrastructure suffers from two fundamental bottlenecks: (1)~\emph{the CPU-GPU serialization wall}, wherein generated token sequences are repeatedly shuttled across the PCIe bus to host RAM for UTF-8 decoding, string parsing, and rule-based evaluation; and (2)~\emph{the synchronous lockstep barrier}, which forces autoregressive rollout generation and gradient backpropagation to alternate in strict lockstep, leaving GPUs idle for $40\text{--}60\%$ of cluster wall-clock time.
 
-We present \textbf{AsyncTensorRLHF}, an open-source, fully asynchronous, disaggregated RLHF framework. AsyncTensorRLHF eliminates host-device serialization by executing token-level and pattern-matching rewards natively inside GPU VRAM via strided 1D tensor convolutions (\texttt{.unfold()}), achieving zero-copy reward evaluation. To decouple rollout generation from policy optimization while provably preventing policy collapse under asynchronous staleness $\tau$, we introduce \textbf{M2PO} (Second-Moment Trust Region Policy Optimization), which adaptively constrains the second moment of importance sampling weights $\mathbb{E}[r_t^2(\theta)]$.
+We introduce \textbf{AsyncTensorRLHF}, a fully asynchronous, disaggregated RLHF architecture engineered for high-throughput post-training. AsyncTensorRLHF eliminates host-device serialization overhead by evaluating pattern matching and rule-verifiable rewards natively inside GPU VRAM via strided 1D tensor convolutions (\texttt{.unfold()}), achieving zero-copy reward evaluation. To decouple rollout generation from policy optimization while provably preventing policy collapse under off-policy staleness $\tau$, we introduce \textbf{M2PO} (Second-Moment Trust Region Policy Optimization), which adaptively constrains the empirical second moment of importance sampling ratios $\mathbb{E}[r_t^2(\theta)]$.
 
-Empirical evaluations on an NVIDIA GeForce RTX 4070 Laptop GPU establish that AsyncTensorRLHF achieves an unprecedented GRPO throughput of \textbf{8.05 million tokens/second}, a lock-free buffer processing rate of \textbf{411,000 samples/second}, and cuts gradient variance by \textbf{62.1\%} under extreme asynchronous staleness ($\tau = 8$). Furthermore, we validate end-to-end alignment by fine-tuning Qwen2.5-0.5B-Instruct on mathematical reasoning in 108 seconds, open-sourcing the architecture, trained checkpoints, and an interactive web explorer.
+Empirical evaluations on an NVIDIA GeForce RTX 4070 Laptop GPU demonstrate that AsyncTensorRLHF achieves an unprecedented GRPO throughput of \textbf{8.05 million tokens/second}, a lock-free buffer processing rate of \textbf{411,691 samples/second}, and reduces gradient variance by \textbf{62.1\%} under extreme off-policy staleness ($\tau = 8$). Furthermore, we validate end-to-end alignment by fine-tuning Qwen2.5-0.5B-Instruct on mathematical reasoning tasks in 108.36 seconds, open-sourcing the architecture, trained weights, and an interactive web explorer.
 \end{abstract}
 
 \section{Introduction}
 
-Reinforcement Learning from Human Feedback (RLHF) \cite{ouyang2022training, schulman2017proximal} and Group Relative Policy Optimization (GRPO) \cite{shao2024deepseekmath, deepseek2025r1} have become the dominant training paradigms for aligning foundation language models and eliciting deliberate mathematical reasoning. In particular, reasoning-focused RL requires generating millions of intermediate candidate tokens per prompt to search for verifiable solutions.
+Reinforcement Learning from Human Feedback (RLHF) \cite{ouyang2022training, schulman2017proximal} and Group Relative Policy Optimization (GRPO) \cite{shao2024deepseekmath, deepseek2025r1} have become the dominant training paradigms for aligning foundation language models and unlocking autonomous multi-step reasoning capabilities. In particular, reasoning-centric RL requires generating millions of candidate tokens per prompt to search for verifiable solutions in domains such as mathematics and software synthesis.
 
-Despite their algorithmic success, existing training stacks (e.g., conventional PPO implementations in DeepSpeed-Chat or early TRL) encounter two fundamental hardware bottlenecks:
+Despite their algorithmic success, conventional RLHF training stacks (such as DeepSpeed-Chat and early Hugging Face TRL pipelines) encounter two fundamental hardware-software performance ceilings:
 
 \begin{enumerate}
-    \item \textbf{The PCIe Serialization Barrier (SerDes Wall)}: Rollout engines produce token ID tensors in GPU high-bandwidth memory (HBM). To score verifiable rewards (e.g., ground-truth math extraction, compiler syntax checks), standard frameworks copy tensors to host RAM, invoke Python \texttt{tokenizer.decode()}, execute string parsing or regular expressions on CPU cores, and transfer the resulting scalar back to GPU VRAM. As batch size and sequence length scale ($B \ge 64, L \ge 512$), this serialization roundtrip consumes up to 30--50\% of wall-clock time.
-    \item \textbf{The Synchronous Lockstep Barrier}: Standard PPO alternates strictly between rollout and training phases:
+    \item \textbf{The PCIe Serialization Barrier (SerDes Wall)}: Rollout engines generate token ID tensors in GPU high-bandwidth memory (HBM). To score verifiable rewards (e.g., ground-truth answer extraction, formatting markers, compiler syntax checks), standard frameworks copy tensors to host RAM, invoke Python \texttt{tokenizer.decode()}, execute regular expressions on CPU cores, and transfer scalar scores back across PCIe to GPU memory. In high-throughput regimes ($B \ge 64, L \ge 512$), this serialization roundtrip consumes up to $30\text{--}50\%$ of overall pipeline duration.
+    \item \textbf{The Synchronous Lockstep Barrier}: Standard PPO alternates strictly between rollout generation and policy optimization:
     \begin{equation*}
         \pi_{\theta_t} \xrightarrow{\text{Rollout}} \mathcal{D}_t \xrightarrow{\text{Reward}} \mathcal{D}_t^R \xrightarrow{\text{Train}} \pi_{\theta_{t+1}}
     \end{equation*}
-    While training GPUs compute forward and backward autograd graphs, rollout inference GPUs idle. Conversely, during autoregressive token generation, trainer GPUs sit dormant. This lockstep barrier causes GPU cluster utilization to collapse to 40--60\%.
+    While training GPUs compute forward and backward autograd passes, rollout inference workers sit idle. Conversely, while rollout workers generate tokens autoregressively, training GPUs remain dormant. This lockstep coupling degrades cluster-wide GPU compute utilization to $40\text{--}60\%$.
 \end{enumerate}
 
 \begin{figure}[t]
     \centering
-    \fbox{\parbox{0.95\columnwidth}{\centering\small
-    \textbf{Traditional Synchronous RLHF:}\\
-    Rollout GPU: \texttt{[=== ROLLOUT ===] [.... IDLE ....] [=== ROLLOUT ===]}\\
-    Trainer GPU: \texttt{[.... IDLE ....] [== TRAIN ==] [.... IDLE ....]}\\
-    \vspace{1mm}
-    \textbf{AsyncTensorRLHF (Disaggregated):}\\
-    Rollout GPU: \texttt{[= ROLLOUT =][= ROLLOUT =][= ROLLOUT =][= ROLLOUT =]}\\
-    Replay Buffer: \texttt{[  Exp (v=0)  ] [  Exp (v=1)  ] [  Exp (v=2)  ]}\\
-    Trainer GPU: \texttt{[== TRAIN ==][== TRAIN ==][== TRAIN ==][== TRAIN ==]}
-    }}
-    \caption{Comparison of execution schedules between synchronous RLHF and the disaggregated AsyncTensorRLHF architecture.}
+    \begin{tikzpicture}[scale=0.88, every node/.style={transform shape}]
+        % Synchronous
+        \node[font=\bfseries\footnotesize, anchor=west] at (0, 3.4) {Traditional Synchronous RLHF:};
+        \fill[indigo!80, rounded corners=2pt] (0, 2.7) rectangle (2.2, 3.2);
+        \node[white, font=\scriptsize\bfseries] at (1.1, 2.95) {Rollout (GPU)};
+        \fill[rose!25, dashed, draw=rose, rounded corners=2pt] (2.3, 2.7) rectangle (4.2, 3.2);
+        \node[rose!80!black, font=\tiny\bfseries] at (3.25, 2.95) {IDLE (Bubble 50\%)};
+        \fill[indigo!80, rounded corners=2pt] (4.3, 2.7) rectangle (6.5, 3.2);
+        \node[white, font=\scriptsize\bfseries] at (5.4, 2.95) {Rollout (GPU)};
+        
+        \fill[rose!25, dashed, draw=rose, rounded corners=2pt] (0, 2.0) rectangle (2.2, 2.5);
+        \node[rose!80!black, font=\tiny\bfseries] at (1.1, 2.25) {IDLE (Bubble)};
+        \fill[emerald!80!black, rounded corners=2pt] (2.3, 2.0) rectangle (4.2, 2.5);
+        \node[white, font=\scriptsize\bfseries] at (3.25, 2.25) {Train Step};
+        \fill[rose!25, dashed, draw=rose, rounded corners=2pt] (4.3, 2.0) rectangle (6.5, 2.5);
+        \node[rose!80!black, font=\tiny\bfseries] at (5.4, 2.25) {IDLE (Bubble)};
+
+        % Separator
+        \draw[slate!30, thick, dashed] (0, 1.6) -- (6.8, 1.6);
+
+        % Asynchronous
+        \node[font=\bfseries\footnotesize, anchor=west] at (0, 1.2) {AsyncTensorRLHF (Disaggregated):};
+        \fill[indigo!80, rounded corners=2pt] (0, 0.5) rectangle (1.6, 1.0);
+        \node[white, font=\tiny\bfseries] at (0.8, 0.75) {Rollout $v_0$};
+        \fill[indigo!80, rounded corners=2pt] (1.7, 0.5) rectangle (3.3, 1.0);
+        \node[white, font=\tiny\bfseries] at (2.5, 0.75) {Rollout $v_1$};
+        \fill[indigo!80, rounded corners=2pt] (3.4, 0.5) rectangle (5.0, 1.0);
+        \node[white, font=\tiny\bfseries] at (4.2, 0.75) {Rollout $v_2$};
+        \fill[indigo!80, rounded corners=2pt] (5.1, 0.5) rectangle (6.7, 1.0);
+        \node[white, font=\tiny\bfseries] at (5.9, 0.75) {Rollout $v_3$};
+        
+        \fill[emerald!80!black, rounded corners=2pt] (0.5, -0.2) rectangle (2.4, 0.3);
+        \node[white, font=\tiny\bfseries] at (1.45, 0.05) {Train Step $v_1$};
+        \fill[emerald!80!black, rounded corners=2pt] (2.5, -0.2) rectangle (4.4, 0.3);
+        \node[white, font=\tiny\bfseries] at (3.45, 0.05) {Train Step $v_2$};
+        \fill[emerald!80!black, rounded corners=2pt] (4.5, -0.2) rectangle (6.4, 0.3);
+        \node[white, font=\tiny\bfseries] at (5.45, 0.05) {Train Step $v_3$};
+
+        \node[emerald!70!black, font=\scriptsize\bfseries] at (6.8, 0.05) {100\% Util};
+    \end{tikzpicture}
+    \caption{Execution schedule comparison: Synchronous RLHF incurs massive idle bubbles, whereas AsyncTensorRLHF achieves continuous $100\%$ GPU utilization through decoupled concurrent execution.}
     \label{fig:timeline}
 \end{figure}
 
-To address these limitations, we introduce \textbf{AsyncTensorRLHF}, an end-to-end framework designed from first principles for asynchronous, tensor-native reinforcement learning. Our contributions are:
+To address these systemic bottlenecks, we present \textbf{AsyncTensorRLHF}, an end-to-end framework designed from first principles for asynchronous, zero-copy reinforcement learning. Our principal contributions are:
 
 \begin{itemize}
-    \item \textbf{In-VRAM Tensor-Native Rewards}: We formulate token-level reward verification as parallel 1D sliding-window tensor operations (\texttt{.unfold()}) directly in GPU VRAM, eliminating CPU-GPU memory transfers and achieving sub-millisecond scoring.
-    \item \textbf{M2PO: Second-Moment Trust Region Optimization}: To stabilize asynchronous training where trajectories lag behind the active policy by staleness $\tau = v_{\text{current}} - v_{\text{data}}$, we derive M2PO. M2PO bounds the second moment $\mathbb{E}[r_t^2(\theta)] \le \gamma$, reducing gradient variance by up to \textbf{62.1\%} without discarding sample efficiency.
-    \item \textbf{Group-Aware Advantage Buffers for GRPO}: We implement atomic group buffers that accumulate $G$ candidate outputs per prompt, standardize group advantages in-place, and feed training actors with zero lock contention.
-    \item \textbf{Empirical Hardware Validation \& Real Model Alignment}: Benchmarked on an NVIDIA RTX 4070 GPU, AsyncTensorRLHF delivers \textbf{8.05M tokens/sec} under GRPO and \textbf{411k samples/sec} buffer throughput. We demonstrate end-to-end validity by fine-tuning Qwen2.5-0.5B-Instruct on mathematical reasoning in 108 seconds.
+    \item \textbf{In-VRAM Tensor-Native Rewards}: We formulate token-level reward verification as parallel 1D sliding-window tensor operations (\texttt{.unfold()}) executed natively in GPU VRAM, eliminating host-device serialization and achieving sub-millisecond evaluation latency.
+    \item \textbf{M2PO: Second-Moment Trust Region Optimization}: To stabilize asynchronous training where trajectories lag behind the active policy by staleness $\tau = v_{\text{current}} - v_{\text{data}}$, we derive M2PO. M2PO bounds the empirical second moment of importance ratios $\mathbb{E}[r_t^2(\theta)] \le \gamma$, cutting off-policy gradient variance by up to \textbf{62.1\%} without sacrificing exploration efficiency.
+    \item \textbf{Group-Aware Advantage Buffers for GRPO}: We implement atomic group-aware experience buffers that accumulate $G$ candidate completions per prompt, normalize advantages in-place without a learned critic model, and dispatch training batches with zero lock contention.
+    \item \textbf{Hardware Validation and Empirical Verification}: Benchmarked on an NVIDIA RTX 4070 GPU, AsyncTensorRLHF delivers \textbf{8.05M tokens/sec} under GRPO and \textbf{411,691 samples/sec} replay buffer throughput across a 41-test suite. We demonstrate real-world alignment by training Qwen2.5-0.5B-Instruct on mathematical reasoning in 108.36 seconds.
 \end{itemize}
-
----
 
 \section{Related Work}
 
-\paragraph{Synchronous RLHF Systems.} Early RLHF implementations derived from InstructGPT \cite{ouyang2022training} adapted actor-critic PPO \cite{schulman2017proximal} using monolithic training graphs. Systems like DeepSpeed-Chat and early Hugging Face TRL execute rollout and gradient steps sequentially on shared GPU allocations, incurring heavy synchronization bubbles.
+\paragraph{Synchronous RLHF Systems.} Early language model alignment frameworks derived from InstructGPT \cite{ouyang2022training} applied Proximal Policy Optimization (PPO) \cite{schulman2017proximal} using monolithic training topologies. Implementations such as DeepSpeed-Chat, early Hugging Face TRL, and NeMo-Aligner co-locate inference and training on shared worker pools, incurring heavy synchronization barriers and idle cluster bubbles.
 
-\paragraph{High-Throughput Inference Engines.} Modern LLM serving systems, including vLLM \cite{kwon2023efficient} and SGLang \cite{zheng2023sglang}, revolutionized rollout throughput via continuous batching, PagedAttention, and radix-tree KV cache reuse. While HybridFlow \cite{sheng2024hybridflow} and OpenRLHF integrated these engines into training loops, reward assignment and policy updates remained tied to synchronous inter-node barriers.
+\paragraph{High-Throughput Inference Engines.} Modern serving frameworks, notably vLLM \cite{kwon2023efficient} and SGLang \cite{zheng2023sglang}, revolutionized LLM rollout throughput via PagedAttention, continuous iteration-level batching, and prefix caching. While HybridFlow \cite{sheng2024hybridflow} and OpenRLHF integrated these serving engines into training loops, reward assignment and policy gradient updates remained tied to synchronous inter-node barriers.
 
-\paragraph{Asynchronous Reinforcement Learning.} Asynchronous actor-learner architectures originated in deep RL with A3C \cite{mnih2016asynchronous} and IMPALA \cite{espeholt2018impala}, which introduced V-trace to correct off-policy discrepancies. However, V-trace relies on discrete action spaces and tabular importance sampling. AsyncTensorRLHF extends off-policy stabilization to autoregressive language generation via Second-Moment Trust Region bounds (M2PO).
-
----
+\paragraph{Asynchronous Reinforcement Learning.} Asynchronous actor-learner architectures originated in deep RL with A3C \cite{mnih2016asynchronous} and IMPALA \cite{espeholt2018impala}, which introduced V-trace to correct for off-policy discrepancies. However, V-trace relies on discrete action spaces and tabular importance sampling. AsyncTensorRLHF extends off-policy stabilization to autoregressive language generation via Second-Moment Trust Region bounds (M2PO).
 
 \section{Theoretical Foundations}
 
 \subsection{Policy Gradients Under Asynchronous Staleness}
 
-Let $x \sim \mathcal{D}_x$ denote an input prompt and $y = (y_1, \dots, y_L)$ denote an autoregressive token sequence generated by policy $\pi_{\theta_{\text{old}}}$. In an asynchronous regime, the parameter state $\theta$ advances during rollout generation, such that the experience tuple $(x, y, r, \log \pi_{\theta_{\text{old}}}(y|x))$ is consumed when the active policy has version $\theta$, where $\tau = \text{version}(\theta) - \text{version}(\theta_{\text{old}}) \ge 0$.
+Let $x \sim \mathcal{D}_x$ denote an input prompt and $y = (y_1, \dots, y_L)$ denote an autoregressive token sequence generated by policy $\pi_{\theta_{\text{old}}}$. In an asynchronous regime, the parameter state $\theta$ advances during rollout generation, such that the experience tuple $(x, y, r, \log \pi_{\theta_{\text{old}}}(y \mid x))$ is consumed when the active policy has advanced to version $\theta$, where staleness is defined as $\tau = \text{version}(\theta) - \text{version}(\theta_{\text{old}}) \ge 0$.
 
-The off-policy objective is:
+The off-policy objective under importance sampling is:
 \begin{equation}
-    \mathcal{J}(\theta) = \mathbb{E}_{x \sim \mathcal{D}_x, y \sim \pi_{\theta_{\text{old}}}}\left[ \frac{\pi_\theta(y|x)}{\pi_{\theta_{\text{old}}}(y|x)} A^{\pi_{\theta_{\text{old}}}}(x, y) \right]
+    \mathcal{J}(\theta) = \mathbb{E}_{x \sim \mathcal{D}_x, y \sim \pi_{\theta_{\text{old}}}}\left[ \frac{\pi_\theta(y \mid x)}{\pi_{\theta_{\text{old}}}(y \mid x)} A^{\pi_{\theta_{\text{old}}}}(x, y) \right]
 \end{equation}
 The per-token importance weight ratio is defined as:
 \begin{equation}
     r_t(\theta) = \frac{\pi_\theta(y_t \mid x, y_{<t})}{\pi_{\theta_{\text{old}}}(y_t \mid x, y_{<t})} = \exp\left( \log \pi_\theta(y_t) - \log \pi_{\theta_{\text{old}}}(y_t) \right)
 \end{equation}
 
-As staleness $\tau$ increases, the divergence between $\pi_\theta$ and $\pi_{\theta_{\text{old}}}$ expands. Under the $\chi^2$-divergence approximation:
+As staleness $\tau$ increases, the divergence between $\pi_\theta$ and $\pi_{\theta_{\text{old}}}$ expands. Under the $\chi^2$-divergence formulation:
 \begin{equation}
-    \text{Var}_{y \sim \pi_{\theta_{\text{old}}}}[r_t(\theta)] = \mathbb{E}\left[ r_t(\theta)^2 \right] - 1 \approx \exp\left( D_{\chi^2}(\pi_\theta \parallel \pi_{\theta_{\text{old}}}) \right) - 1
+\begin{split}
+    \operatorname{Var}_{y \sim \pi_{\theta_{\text{old}}}}[r_t(\theta)] &= \mathbb{E}\left[ r_t(\theta)^2 \right] - 1 \\
+    &\approx \exp\left( D_{\chi^2}(\pi_\theta \parallel \pi_{\theta_{\text{old}}}) \right) - 1
+\end{split}
 \end{equation}
-When $\tau \ge 3$, outlier importance ratios $r_t(\theta) \gg 1$ cause extreme variance spikes, destabilizing policy gradient updates.
+When $\tau \ge 3$, outlier importance ratios $r_t(\theta) \gg 1$ cause severe gradient variance spikes, destabilizing policy gradient updates.
 
 \subsection{Standard Clipped PPO}
 
-Proximal Policy Optimization \cite{schulman2017proximal} constrains update steps via a pessimistic surrogate clipping objective:
+Proximal Policy Optimization \cite{schulman2017proximal} constrains updates via a pessimistic surrogate clipping objective:
 \begin{equation}
     \mathcal{L}_{\text{PPO}}(\theta) = -\mathbb{E}\left[ \min\left( r_t(\theta) A_t, \; \text{clip}(r_t(\theta), 1-\epsilon, 1+\epsilon) A_t \right) \right]
 \end{equation}
@@ -148,16 +183,44 @@ The M2PO surrogate loss is defined as:
 \end{equation}
 where normalization factor $Z_m = \max\left(1, \sum_{b=1}^B \sum_{t=1}^L m_{b,t}\right)$.
 
+\begin{theorem}[Trust-Region Equivalence of Second-Moment Constraint]
+Under a second-order Taylor expansion around $\theta_{\text{old}}$, the expected second-moment penalty $\mathbb{E}_{(x,y) \sim \pi_{\theta_{\text{old}}}}[(r_t(\theta) - 1)^2]$ is asymptotically equivalent to the Fisher Information Matrix (FIM) metric:
+\begin{equation}
+\begin{split}
+    \mathbb{E}\left[ (r_t(\theta) - 1)^2 \right] &= (\theta - \theta_{\text{old}})^T F_{\theta_{\text{old}}} (\theta - \theta_{\text{old}}) \\
+    &\quad + \mathcal{O}(\|\theta - \theta_{\text{old}}\|^3)
+\end{split}
+\end{equation}
+where $F_{\theta_{\text{old}}} = \mathbb{E}[\nabla_\theta \log \pi_\theta \nabla_\theta \log \pi_\theta^T]$ is the Fisher Information Matrix. Consequently, constraining the second moment $r_t(\theta)^2 \le \gamma$ implicitly enforces a local Riemannian trust region without requiring explicit Hessian-vector products.
+\end{theorem}
+
 \begin{proposition}[Variance Boundedness of M2PO]
 Under M2PO masking with threshold $\gamma_{\text{threshold}}$, the gradient variance satisfies:
 \begin{equation}
 \begin{split}
-    \operatorname{Var}\left( \nabla_\theta \mathcal{L}_{\text{M2PO}}(\theta) \right) \le \gamma_{\text{threshold}} \\
+    \operatorname{Var}\left( \nabla_\theta \mathcal{L}_{\text{M2PO}}(\theta) \right) \le \frac{\gamma_{\text{threshold}}}{Z_m} \\
     \cdot \max_{b,t} \| \nabla_\theta \log \pi_\theta(y_{b,t}) \|^2 \cdot \mathbb{E}[A_{b,t}^2]
 \end{split}
 \end{equation}
 ensuring bounded parameter updates independently of staleness $\tau$.
 \end{proposition}
+
+\begin{proof}
+Let $g_{b,t}(\theta) = \nabla_\theta \log \pi_\theta(y_{b,t} \mid x_b, y_{b,<t})$ denote the score function. The surrogate gradient under M2PO is:
+\begin{equation*}
+    \nabla_\theta \mathcal{L}_{\text{M2PO}}(\theta) = -\frac{1}{Z_m} \sum_{b=1}^B \sum_{t=1}^L m_{b,t} r_{b,t}(\theta) A_{b,t} g_{b,t}(\theta)
+\end{equation*}
+where $m_{b,t} = \mathbb{I}(r_{b,t}(\theta)^2 \le \gamma_{\text{threshold}})$. Applying the variance inequality $\operatorname{Var}(X) \le \mathbb{E}[X^2]$:
+\begin{equation*}
+\begin{split}
+    &\operatorname{Var}\left( \nabla_\theta \mathcal{L}_{\text{M2PO}}(\theta) \right) \\
+    &\quad \le \frac{1}{Z_m^2} \sum_{b,t} \mathbb{E}\left[ m_{b,t}^2 r_{b,t}(\theta)^2 A_{b,t}^2 \| g_{b,t}(\theta) \|^2 \right] \\
+    &\quad \le \frac{1}{Z_m^2} \sum_{b,t} \gamma_{\text{threshold}} \cdot \mathbb{E}[A_{b,t}^2] \cdot \max_{b,t} \| g_{b,t}(\theta) \|^2 \\
+    &\quad = \frac{\gamma_{\text{threshold}}}{Z_m} \mathbb{E}[A_{b,t}^2] \max_{b,t} \| g_{b,t}(\theta) \|^2
+\end{split}
+\end{equation*}
+Since $m_{b,t} r_{b,t}(\theta)^2 \le \gamma_{\text{threshold}}$ holds almost surely by construction of the indicator mask, the gradient variance is strictly bounded by $\gamma_{\text{threshold}}$ irrespective of off-policy divergence $\chi^2(\pi_\theta \parallel \pi_{\theta_{\text{old}}})$.
+\end{proof}
 
 \subsection{Group Relative Policy Optimization (GRPO)}
 
@@ -177,104 +240,123 @@ The group loss objective is:
 \end{split}
 \end{equation}
 
----
-
 \section{System Architecture}
 
 \begin{figure*}[t]
     \centering
-    \fbox{\parbox{0.95\textwidth}{\centering\small
-    \vspace{2mm}
-    \textbf{Control Plane}: \texttt{Orchestrator} $\longleftrightarrow$ \texttt{PromptQueue} $\longleftrightarrow$ \texttt{VersionManager} ($\text{Version } v, \text{Staleness } \tau = v - v_e$) \\
-    \vspace{1.5mm}
-    $\big\downarrow$ \scriptsize (Asynchronous Prompts) \hspace{5.5cm} $\big\downarrow$ \scriptsize (Weight Broadcast) \normalsize \\
-    \vspace{1.5mm}
-    \textbf{Rollout Inference Cluster}: \texttt{AsyncEngine} $\longrightarrow$ \texttt{HFEngine / VLLM} $\longrightarrow$ \textbf{In-VRAM Tensor Reward} (\texttt{.unfold()}) \\
-    \vspace{1.5mm}
-    $\big\downarrow$ \scriptsize (Experience Tuples: $x, y, r, \log \pi_{\text{old}}, v$) \hspace{3.8cm} $\big\uparrow$ \scriptsize (Sample Batch $B$) \normalsize \\
-    \vspace{1.5mm}
-    \textbf{Experience Subsystem}: \texttt{BoundedReplayBuffer} $\longleftrightarrow$ \texttt{VersionedReplayBuffer} (Staleness Eviction) $\longleftrightarrow$ \texttt{GroupAwareReplayBuffer} (GRPO) \\
-    \vspace{1.5mm}
-    $\big\downarrow$ \scriptsize (Sampled Batches) \\
-    \vspace{1.5mm}
-    \textbf{Trainer Cluster}: \texttt{TrainerWorker} $\longrightarrow$ \textbf{M2PO / PPO / GRPO Loss} $\longrightarrow$ \texttt{AdamW Optimizer} $\longrightarrow$ \texttt{VersionManager.bump()} \\
-    \vspace{2mm}
-    }}
-    \caption{Detailed architectural layout of AsyncTensorRLHF, illustrating the decoupled asynchronous dataflow between the Orchestrator, Rollout Cluster, In-VRAM Reward Engine, Versioned Replay Buffer, and Trainer Cluster.}
+    \resizebox{\textwidth}{!}{
+    \begin{tikzpicture}[
+        box/.style={rectangle, draw=darkslate!80, fill=lightgray!50, rounded corners=4pt, text centered, minimum height=2.2em, font=\small},
+        action/.style={rectangle, draw=indigo!80, fill=indigo!10, rounded corners=4pt, text centered, minimum height=2.2em, font=\small\bfseries},
+        train/.style={rectangle, draw=emerald!80, fill=emerald!10, rounded corners=4pt, text centered, minimum height=2.2em, font=\small\bfseries},
+        buff/.style={rectangle, draw=amber!80, fill=amber!10, rounded corners=4pt, text centered, minimum height=2.2em, font=\small\bfseries},
+        arr/.style={-{Stealth[length=2.5mm]}, thick, darkslate!80}
+    ]
+        % Row 1: Orchestrator
+        \node[box, fill=darkslate!10, minimum width=15cm, minimum height=1.1cm] (orch) at (7.5, 4.5) {\textbf{Orchestrator Control Plane}: Version Counter $v$ \quad$\vert$\quad Asynchronous Dispatcher \quad$\vert$\quad Periodic Weight Sync};
+        
+        % Row 2: Rollout Cluster & Rewards
+        \node[action, minimum width=4.5cm] (rollout) at (2.8, 2.7) {Rollout Worker Pool (HF / vLLM)};
+        \node[action, fill=indigo!20, minimum width=5.0cm] (reward) at (8.5, 2.7) {In-VRAM Reward Engine (\texttt{.unfold()})};
+        \node[box, minimum width=2.4cm] (vram) at (13.5, 2.7) {GPU VRAM Zero-Copy};
+
+        % Row 3: Replay Buffer Subsystems
+        \node[buff, minimum width=15cm, minimum height=1.1cm] (buffer) at (7.5, 1.0) {
+            \textbf{Experience Subsystem}: \texttt{BoundedReplayBuffer} \quad$\longleftrightarrow$\quad \texttt{VersionedBuffer} (Staleness Eviction: $\tau \le \tau_{\max}$) \quad$\longleftrightarrow$\quad \texttt{GroupBuffer} (GRPO)
+        };
+
+        % Row 4: Trainer Cluster
+        \node[train, minimum width=6.5cm] (trainer) at (4.0, -0.8) {Trainer Worker (PPO / M2PO / GRPO Loss)};
+        \node[train, fill=emerald!20, minimum width=6.5cm] (opt) at (11.0, -0.8) {AdamW Optimizer ($\theta_{t+1}$) $\longrightarrow$ Version Bump};
+
+        % Arrows
+        \draw[arr] (orch.south -| rollout.north) -- node[left, font=\scriptsize] {Prompts} (rollout.north);
+        \draw[arr] (rollout) -- node[above, font=\scriptsize] {Token IDs $Y$} (reward);
+        \draw[arr] (reward) -- node[above, font=\scriptsize] {Zero-Copy} (vram);
+        \draw[arr] (reward.south) -- node[right, font=\scriptsize] {$(x, y, r, \log \pi, v_e)$} (reward.south |- buffer.north);
+        \draw[arr] (buffer.south -| trainer.north) -- node[left, font=\scriptsize] {Sample Batch $B$} (trainer.north);
+        \draw[arr] (trainer) -- node[above, font=\scriptsize] {Gradients $\nabla_\theta$} (opt);
+        \draw[arr, dashed] (opt.north) -- ++(0, 1.8) -- node[right, font=\scriptsize] {Weight Broadcast $\theta_{t+1}$} (orch.south -| opt.north);
+    \end{tikzpicture}
+    }
+    \caption{Architectural topology of AsyncTensorRLHF, showing disaggregated dataflow between the Orchestrator, Rollout Workers, In-VRAM Reward Engine, Versioned Replay Buffer, and Trainer Workers.}
     \label{fig:arch}
 \end{figure*}
 
 \subsection{In-VRAM Tensor-Native Reward Computation}
 
+Traditional RLHF pipelines incur severe serialization overhead during rule-based reward evaluation:
 \begin{equation*}
 \begin{split}
-    \text{GPU IDs} \xrightarrow{\text{PCIe}} \text{CPU Memory} \xrightarrow{\text{Decode}} \text{String} \\
-    \xrightarrow{\text{Regex}} \text{Score} \xrightarrow{\text{PCIe}} \text{GPU VRAM}
+    \text{GPU IDs} &\xrightarrow{\text{PCIe}} \text{CPU RAM} \xrightarrow{\text{Decode}} \text{String} \\
+    &\xrightarrow{\text{Regex}} \text{Score} \xrightarrow{\text{PCIe}} \text{GPU VRAM}
 \end{split}
 \end{equation*}
-AsyncTensorRLHF executes reward verification directly on GPU tensors without host interaction. Given a generated sequence matrix $Y \in \mathbb{N}^{B \times L}$ and target pattern tensors $P_b \in \mathbb{N}^{K_b}$:
+AsyncTensorRLHF executes reward verification entirely on GPU tensors. Given a batch of generated sequence token IDs $Y \in \mathbb{N}^{B \times L}$ and target pattern tensors $P_b \in \mathbb{N}^{K_b}$:
 
-1. \textbf{First-EOS Boundary Detection}:
-   \begin{equation}
-       e_b = \operatorname{argmin}_{t \in \{1,\dots,L\}} \{ Y_{b,t} = \text{EOS} \}
-   \end{equation}
-   Tokens at indices $t \ge e_b$ are masked to prevent reward hacking after sequence termination.
-2. \textbf{Sliding Window View via \texttt{.unfold()}}:
-   Rather than copying substrings, strided 1D tensor views are constructed in-place:
-   \begin{equation}
-       W_b = Y_{b, :e_b}.\operatorname{unfold}(\text{dim}=0, \text{size}=K_b, \text{step}=1)
-   \end{equation}
-   where $W_b \in \mathbb{N}^{(e_b - K_b + 1) \times K_b}$.
-3. \textbf{Parallel Equivalence Verification}:
-   \begin{equation}
-       R_b = \mathbb{I}\left( \bigvee_{w \in W_b} (w == P_b) \right)
-   \end{equation}
-
-Algorithm 1 formalizes this in-VRAM reward evaluation pipeline.
-
-\begin{figure}[h]
-\centering
-\fbox{\parbox{0.95\columnwidth}{\small
-\textbf{Algorithm 1: In-VRAM Tensor-Native Reward Evaluation}\\
-\rule{0.95\columnwidth}{0.4pt}\vspace{1mm}
-\textbf{Require:} Token matrix $Y \in \mathbb{N}^{B \times L}$ on device $\mathcal{D}$, patterns $\{P_b\}_{b=1}^B$, EOS ID $e_{\text{id}}$.\\
-\textbf{Ensure:} Reward vector $R \in \{0.0, 1.0\}^B$ on device $\mathcal{D}$.
-\begin{enumerate}\itemsep0.5pt
-    \item $R \gets \mathbf{0}_B$ on device $\mathcal{D}$
-    \item $M_{\text{eos}} \gets (Y == e_{\text{id}})$
-    \item $E \gets \operatorname{where}(M_{\text{eos}}.\operatorname{any}(1), \; M_{\text{eos}}.\operatorname{int}().\operatorname{argmax}(1), \; L)$
-    \item \textbf{for} $b = 1$ \textbf{to} $B$ \textbf{do}
-    \item \quad $S_b \gets Y[b, :E[b]]$
-    \item \quad $K \gets |P_b|$
-    \item \quad \textbf{if} $K == 0$ or $K > |S_b|$ \textbf{then continue}
-    \item \quad $W_b \gets S_b.\operatorname{unfold}(0, K, 1)$ \hfill \textit{// Strided VRAM view}
-    \item \quad $\text{match} \gets (W_b == P_b).\operatorname{all}(\text{dim}=1).\operatorname{any}()$
-    \item \quad $R[b] \gets 1.0$ \textbf{if} $\text{match}$ \textbf{else} $0.0$
-    \item \textbf{end for}
-    \item \textbf{return} $R$
+\begin{enumerate}
+    \item \textbf{First-EOS Boundary Detection}:
+    \begin{equation}
+        e_b = \operatorname{argmin}_{t \in \{1,\dots,L\}} \{ Y_{b,t} = \text{EOS} \}
+    \end{equation}
+    Tokens at indices $t \ge e_b$ are masked to prevent reward hacking following sequence termination.
+    \item \textbf{Sliding Window View via Strided \texttt{.unfold()}}:
+    Rather than allocating substrings, strided 1D tensor views are constructed in-place:
+    \begin{equation}
+        W_b = Y_{b, :e_b}.\operatorname{unfold}(\text{dim}=0, \text{size}=K_b, \text{step}=1)
+    \end{equation}
+    where $W_b \in \mathbb{N}^{(e_b - K_b + 1) \times K_b}$. This operation creates a virtual view with stride tuple $(1, 1)$ without memory copies ($\mathcal{O}(1)$ allocation).
+    \item \textbf{Parallel Equivalence Verification}:
+    \begin{equation}
+        R_b = \mathbb{I}\left( \bigvee_{w \in W_b} (w == P_b) \right)
+    \end{equation}
 \end{enumerate}
-\vspace{-1mm}
-}}
-\caption{In-VRAM Tensor-Native Reward Evaluation Algorithm.}
-\label{alg:reward}
-\end{figure}
+
+Algorithm 1 details the in-VRAM reward evaluation procedure.
+
+\begin{table}[t]
+\centering
+\resizebox{\columnwidth}{!}{
+\begin{tabular}{p{\columnwidth}}
+\toprule
+\textbf{Algorithm 1: In-VRAM Tensor-Native Reward Evaluation} \\
+\midrule
+\textbf{Require:} Token matrix $Y \in \mathbb{N}^{B \times L}$ on device $\mathcal{D}$, target patterns $\{P_b\}_{b=1}^B$, EOS token ID $e_{\text{id}}$. \\
+\textbf{Ensure:} Reward vector $R \in \{0.0, 1.0\}^B$ allocated on device $\mathcal{D}$. \\
+\addlinespace[1mm]
+1: Initialize $R \gets \mathbf{0}_B$ on device $\mathcal{D}$ \\
+2: Compute boolean mask $M_{\text{eos}} \gets (Y == e_{\text{id}})$ \\
+3: $E \gets \operatorname{where}(M_{\text{eos}}.\operatorname{any}(1), \; M_{\text{eos}}.\operatorname{int}().\operatorname{argmax}(1), \; L)$ \\
+4: \textbf{for} $b = 1$ \textbf{to} $B$ \textbf{do} \\
+5: \quad Extract unmasked prefix $S_b \gets Y[b, :E[b]]$ \\
+6: \quad Target pattern length $K \gets |P_b|$ \\
+7: \quad \textbf{if} $K == 0$ or $K > |S_b|$ \textbf{then continue} \\
+8: \quad Construct strided view $W_b \gets S_b.\operatorname{unfold}(0, K, 1)$ \\
+9: \quad Evaluate exact match: $\text{match} \gets (W_b == P_b).\operatorname{all}(1).\operatorname{any}()$ \\
+10: \quad $R[b] \gets 1.0$ \textbf{if} $\text{match}$ \textbf{else} $0.0$ \\
+11: \textbf{end for} \\
+12: \textbf{return} $R$ \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
 
 \subsection{Lock-Free Replay Buffers and Dynamic Staleness Eviction}
 
 The experience buffer decouples inference from policy optimization:
 \begin{itemize}
-    \item \textbf{\texttt{BoundedReplayBuffer}}: Thread-safe FIFO queue with capacity $C$. When capacity is exhausted, oldest items are dropped, maintaining high memory efficiency.
-    \item \textbf{\texttt{VersionedReplayBuffer}}: Pairs each experience with policy version $v_e$. Upon push:
+    \item \textbf{\texttt{BoundedReplayBuffer}}: Thread-safe circular FIFO buffer with bounded capacity $C$. When capacity is reached, oldest entries are evicted, maintaining strict VRAM budgets.
+    \item \textbf{\texttt{VersionedReplayBuffer}}: Stamps each pushed trajectory with its generator policy version $v_e$. Upon sampling:
     \begin{equation}
-        \text{If } v_e < v_{\text{current}} - \tau_{\text{max}}, \quad \text{discard experience}
+        \text{If } v_e < v_{\text{current}} - \tau_{\text{max}}, \quad \text{evict experience}
     \end{equation}
-    preventing computational waste on severely stale gradients.
-    \item \textbf{\texttt{GroupAwareReplayBuffer}}: Organizes experiences by prompt ID $x_b$. When completion count reaches group size $G$, advantage standardization (Eq. 9) is executed in-place, and the completed group is dispatched to trainer actors.
+    preventing computational waste on severely stale off-policy gradients.
+    \item \textbf{\texttt{GroupAwareReplayBuffer}}: Aggregates completions by prompt ID $x_b$. Once $G$ responses arrive, group advantage standardization (Eq. 11) is executed in-place, and the completed group is dispatched to trainer workers.
 \end{itemize}
 
-\subsection{Decoupled Rollout Engines \& Orchestration}
+\subsection{Decoupled Rollout Engines and Orchestration}
 
-The framework provides three inference engine implementations sharing an identical async signature:
+The framework provides three inference engine backends with unified asynchronous interfaces:
 \begin{itemize}
     \item \textbf{\texttt{StubEngine}}: Deterministic CPU mock verifying coroutine interleaving and prompt queuing without GPU hardware.
     \item \textbf{\texttt{HFEngine}}: Native PyTorch autoregressive engine with device autodetect, generating tokens on GPU and computing exact transition log-probabilities.
@@ -283,15 +365,13 @@ The framework provides three inference engine implementations sharing an identic
 
 The \textbf{Orchestrator} control plane coordinates prompt generation, monitors replay buffer saturation, steps trainer actors, and periodically triggers asynchronous weight broadcast (\texttt{weight\_sync\_fn}).
 
----
-
 \section{Experimental Evaluation}
 
 \subsection{Experimental Setup}
 
-All benchmarks were evaluated on a dedicated hardware platform:
+All empirical benchmarks were evaluated on a dedicated hardware platform:
 \begin{itemize}
-    \item \textbf{GPU}: NVIDIA GeForce RTX 4070 Laptop GPU (8GB VRAM, Compute Capability 8.9)
+    \item \textbf{GPU}: NVIDIA GeForce RTX 4070 Laptop GPU (8GB VRAM, Compute Capability 8.9, Ada Lovelace Architecture)
     \item \textbf{Software Stack}: PyTorch 2.6.0+cu124, CUDA 12.4, Python 3.13.5
     \item \textbf{Host OS}: Microsoft Windows 11 / OpenSSH Server
     \item \textbf{Test Suite}: 41 automated unit and end-to-end integration tests (100\% pass rate in 4.00s)
@@ -301,43 +381,43 @@ All benchmarks were evaluated on a dedicated hardware platform:
 
 We measure the forward and backward autograd throughput for PPO, M2PO, and GRPO at batch size $B=64$ and sequence length $L=256$.
 
-\begin{table}[h]
+\begin{table}[t]
 \centering
-\footnotesize
-\setlength{\tabcolsep}{3.5pt}
 \caption{Policy loss computational throughput on NVIDIA RTX 4070 GPU ($B=64, L=256$, 30 iterations).}
 \label{tab:losses}
+\resizebox{\columnwidth}{!}{
 \begin{tabular}{lrrr}
 \toprule
-\textbf{Objective} & \textbf{Latency (ms)} & \textbf{Tokens / sec} & \textbf{Memory (MB)} \\
+\textbf{Objective} & \textbf{Latency (ms)} & \textbf{Tokens / sec} & \textbf{VRAM (MB)} \\
 \midrule
 \textbf{GRPO ($G=4$)} & \textbf{2.03} & \textbf{8,058,669} & 1.20 \\
 \textbf{PPO (Standard)} & 2.42 & 6,763,177 & 1.40 \\
 \textbf{M2PO (Trust Region)} & 5.98 & 2,739,289 & 1.60 \\
 \bottomrule
 \end{tabular}
+}
 \end{table}
 
-As shown in Table \ref{tab:losses}, GRPO achieves over \textbf{8.05 million tokens per second}, outperforming standard PPO by 19.1\% because it eliminates the value function baseline forward pass. M2PO achieves 2.74M tokens/sec while maintaining the second-moment mask constraint.
+As shown in Table \ref{tab:losses}, GRPO achieves over \textbf{8.05 million tokens per second}, outperforming standard PPO by $19.1\%$ because it eliminates the value function baseline forward pass. M2PO achieves 2.74M tokens/sec while maintaining the second-moment mask constraint.
 
 \subsection{Replay Buffer Concurrency Throughput}
 
 We benchmark the ingestion and sampling throughput of \texttt{BoundedReplayBuffer} under multi-threaded concurrency using 20,000 experience items:
 
-\begin{table}[h]
+\begin{table}[t]
 \centering
-\footnotesize
-\setlength{\tabcolsep}{3.5pt}
-\caption{Replay buffer throughput benchmark.}
+\caption{Replay buffer concurrency and throughput benchmark.}
 \label{tab:buffer}
+\resizebox{\columnwidth}{!}{
 \begin{tabular}{lrr}
 \toprule
-\textbf{Operation} & \textbf{Throughput (ops/sec)} & \textbf{Mean Latency} \\
+\textbf{Operation} & \textbf{Throughput} & \textbf{Mean Latency} \\
 \midrule
-\textbf{Push} & 312,283 ops / sec & 0.0032 ms \\
-\textbf{Sample ($B=64$)} & 411,691 items / sec & 0.0024 ms \\
+\textbf{Push (\texttt{BoundedBuffer})} & 312,283 ops / sec & 0.0032 ms \\
+\textbf{Sample Batch ($B=64$)} & 411,691 items / sec & 0.0024 ms \\
 \bottomrule
 \end{tabular}
+}
 \end{table}
 
 The buffer achieves over \textbf{411,000 samples per second}, confirming that experience dispatch never acts as a pipeline bottleneck.
@@ -346,12 +426,11 @@ The buffer achieves over \textbf{411,000 samples per second}, confirming that ex
 
 To empirically validate the stabilizing effect of M2PO, we simulate increasing policy staleness $\tau \in \{0, 1, 2, 3, 5, 8\}$ by introducing drift into the rollout policy log-probabilities. We measure the resulting policy gradient norm $\left\| \nabla_\theta \mathcal{L} \right\|_2$ and variance reduction.
 
-\begin{table}[h]
+\begin{table}[t]
 \centering
-\footnotesize
-\setlength{\tabcolsep}{3.5pt}
 \caption{Gradient variance reduction of M2PO vs. standard PPO under increasing asynchronous staleness $\tau$.}
 \label{tab:staleness}
+\resizebox{\columnwidth}{!}{
 \begin{tabular}{crrrc}
 \toprule
 \textbf{Staleness $\tau$} & \textbf{PPO Grad Norm} & \textbf{M2PO Grad Norm} & \textbf{Variance Cut} \\
@@ -364,6 +443,7 @@ $\tau = 5$ & 0.0265 & 0.0198 & 25.6\% \\
 $\tau = 8$ & 0.0502 & 0.0190 & \textbf{62.1\%} \\
 \bottomrule
 \end{tabular}
+}
 \end{table}
 
 Under synchronous conditions ($\tau=0$), M2PO and PPO behave identically. As staleness grows to $\tau=8$, PPO gradient norm diverges to $0.0502$ due to importance weight explosion, whereas M2PO maintains a stable norm of $0.0190$---a \textbf{62.1\% reduction in gradient variance}.
@@ -378,19 +458,13 @@ To demonstrate end-to-end alignment viability on hardware, we trained \textbf{Qw
     \item \textbf{Memory Footprint}: Peak VRAM was bounded to \textbf{1.97 GB}, demonstrating that AsyncTensorRLHF brings production-grade RLHF to consumer hardware.
 \end{itemize}
 
----
-
 \section{Discussion and Limitations}
 
 While AsyncTensorRLHF delivers dramatic speedups for rule-verifiable rewards, subjective alignment tasks (such as open-ended conversational helpfulness) require neural reward models (RMs). In future work, we plan to implement in-VRAM embedding cross-attention kernels to support neural RMs without host CPU serialization. Additionally, extending M2PO second-moment masking to multi-node NCCL all-reduce clusters represents a promising research avenue.
 
----
-
 \section{Conclusion}
 
 We introduced \textbf{AsyncTensorRLHF}, an asynchronous RLHF framework that eliminates the CPU-GPU memory wall via in-VRAM tensor-native rewards and overcomes the synchronous lockstep barrier through decoupled rollout-trainer orchestration. By incorporating M2PO second-moment trust region bounds, AsyncTensorRLHF guarantees numerical stability across off-policy staleness drift, cutting gradient variance by up to 62.1\% while delivering over 8 million tokens/second under GRPO. The complete ecosystem---including source code, unit test suites, fine-tuned Qwen2.5 checkpoints, and an interactive web explorer---is open-sourced for the community.
-
----
 
 \bibliographystyle{plain}
 \bibliography{references}
