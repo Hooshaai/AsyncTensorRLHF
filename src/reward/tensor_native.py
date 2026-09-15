@@ -1,5 +1,3 @@
-# Tensor‑native reward utilities
-
 import torch
 from typing import List
 
@@ -39,9 +37,10 @@ def gpu_reward_simple(
 
 
 def tensor_native_reward(
-    generated_ids: torch.Tensor,          # (B, L) int64 on GPU
-    answer_patterns: List[torch.Tensor],  # list of ground‑truth token tensors (each 1‑D)
+    generated_ids: torch.Tensor,
+    answer_patterns: List[torch.Tensor],
     eos_token_id: int,
+    device: str = "cpu",
 ) -> torch.Tensor:
     """Fully batched tensor‑native reward.
 
@@ -51,20 +50,24 @@ def tensor_native_reward(
     - Returns a (B,) float tensor of rewards (1.0 / 0.0).
     """
     B, L = generated_ids.shape
-    device = generated_ids.device
-    rewards = torch.zeros(B, device=device)
+    device_obj = torch.device(device)
+    generated_ids = generated_ids.to(device_obj)
+    # Ensure answer patterns are on the same device
+    answer_patterns = [p.to(device_obj) for p in answer_patterns]
+
+    rewards = torch.zeros(B, device=device_obj)
 
     # EOS handling
     eos_mask = generated_ids == eos_token_id
     first_eos = torch.where(
         eos_mask.any(dim=1),
         eos_mask.int().argmax(dim=1),
-        torch.full((B,), L, device=device, dtype=torch.long),
+        torch.full((B,), L, device=device_obj, dtype=torch.long),
     )
 
     for i in range(B):
         seq = generated_ids[i, : first_eos[i]]
-        pattern = answer_patterns[i].to(device)
+        pattern = answer_patterns[i]
         pat_len = pattern.shape[0]
         if pat_len == 0 or pat_len > seq.shape[0]:
             continue
