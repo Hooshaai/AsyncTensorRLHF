@@ -10,7 +10,14 @@ Validates:
 """
 
 import asyncio
+import os
+import pathlib
+import sys
 import time
+
+# Ensure project root is in sys.path
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+
 import torch
 
 from src.reward.tensor_native import tensor_native_reward, gpu_reward_simple
