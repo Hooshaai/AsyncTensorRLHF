@@ -27,7 +27,7 @@ def gpu_reward_simple(
         gen = generated_ids[i, : first_eos[i]]
         gt = ground_truth_ids[i]
         gt_len = gt.shape[0]
-        if gt_len > gen.shape[0]:
+        if gt_len == 0 or gt_len > gen.shape[0]:
             continue
         # sliding window comparison
         windows = gen.unfold(0, gt_len, 1)  # (gen_len-gt_len+1, gt_len)
