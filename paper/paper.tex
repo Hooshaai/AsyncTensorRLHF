@@ -74,50 +74,50 @@ Despite their algorithmic success, conventional RLHF training stacks (such as De
     \begin{tikzpicture}[
         font=\sffamily,
         task/.style={rectangle, rounded corners=3pt, draw=none, text=white, font=\scriptsize\bfseries, align=center, inner sep=0pt},
-        bubble/.style={rectangle, rounded corners=3pt, draw=rose!80, fill=rose!15, dashed, font=\tiny\bfseries, text=rose!80!black, align=center, inner sep=0pt},
+        bubble/.style={rectangle, rounded corners=3pt, draw=rose!80, fill=rose!15, dashed, font=\scriptsize\bfseries, text=rose!80!black, align=center, inner sep=0pt},
         axis/.style={-{Stealth[length=2mm]}, thick, slate!70}
     ]
         % Traditional Synchronous PPO
-        \node[anchor=west, font=\footnotesize\bfseries, text=darkslate] at (0, 4.3) {\textbf{Traditional Synchronous RLHF (Coupled Lockstep):}};
+        \node[anchor=west, font=\footnotesize\bfseries, text=darkslate] at (0, 4.4) {\textbf{Traditional Synchronous RLHF (Coupled Lockstep):}};
         
-        \node[anchor=east, font=\tiny\bfseries, text=slate] at (-0.1, 3.7) {Rollout GPU};
-        \node[task, fill=indigo!85, minimum width=1.8cm, minimum height=0.55cm] at (1.0, 3.7) {Rollout $\pi_{\theta_0}$};
-        \node[bubble, minimum width=1.8cm, minimum height=0.55cm] at (3.0, 3.7) {IDLE BUBBLE (50\%)};
-        \node[task, fill=indigo!85, minimum width=1.8cm, minimum height=0.55cm] at (5.0, 3.7) {Rollout $\pi_{\theta_1}$};
-        \node[bubble, minimum width=1.5cm, minimum height=0.55cm] at (6.8, 3.7) {IDLE};
+        \node[anchor=east, font=\scriptsize\bfseries, text=slate] at (-0.1, 3.8) {Rollout GPU};
+        \node[task, fill=indigo!85, minimum width=1.7cm, minimum height=0.55cm] at (0.95, 3.8) {Rollout $\pi_0$};
+        \node[bubble, minimum width=1.7cm, minimum height=0.55cm] at (2.85, 3.8) {Idle (50\%)};
+        \node[task, fill=indigo!85, minimum width=1.7cm, minimum height=0.55cm] at (4.75, 3.8) {Rollout $\pi_1$};
+        \node[bubble, minimum width=1.7cm, minimum height=0.55cm] at (6.65, 3.8) {Idle (50\%)};
 
-        \node[anchor=east, font=\tiny\bfseries, text=slate] at (-0.1, 2.9) {Trainer GPU};
-        \node[bubble, minimum width=1.8cm, minimum height=0.55cm] at (1.0, 2.9) {IDLE};
-        \node[task, fill=emerald!85!black, minimum width=1.8cm, minimum height=0.55cm] at (3.0, 2.9) {Train $\theta_1$};
-        \node[bubble, minimum width=1.8cm, minimum height=0.55cm] at (5.0, 2.9) {IDLE};
-        \node[task, fill=emerald!85!black, minimum width=1.5cm, minimum height=0.55cm] at (6.8, 2.9) {Train $\theta_2$};
+        \node[anchor=east, font=\scriptsize\bfseries, text=slate] at (-0.1, 3.0) {Trainer GPU};
+        \node[bubble, minimum width=1.7cm, minimum height=0.55cm] at (0.95, 3.0) {Idle (50\%)};
+        \node[task, fill=emerald!85!black, minimum width=1.7cm, minimum height=0.55cm] at (2.85, 3.0) {Train Step 1};
+        \node[bubble, minimum width=1.7cm, minimum height=0.55cm] at (4.75, 3.0) {Idle (50\%)};
+        \node[task, fill=emerald!85!black, minimum width=1.7cm, minimum height=0.55cm] at (6.65, 3.0) {Train Step 2};
 
         % Time axis for Sync
-        \draw[axis] (0, 2.4) -- (7.8, 2.4) node[right, font=\tiny\bfseries, text=slate] {Time ($t$)};
+        \draw[axis] (0, 2.45) -- (7.8, 2.45) node[right, font=\tiny\bfseries, text=slate] {Time ($t$)};
 
         % Separator
-        \draw[slate!30, thick, dashed] (-0.8, 2.0) -- (8.2, 2.0);
+        \draw[slate!30, thick, dashed] (-1.2, 2.05) -- (8.2, 2.05);
 
         % AsyncTensorRLHF Disaggregated
-        \node[anchor=west, font=\footnotesize\bfseries, text=darkslate] at (0, 1.6) {\textbf{AsyncTensorRLHF (Disaggregated Continuous Streams):}};
+        \node[anchor=west, font=\footnotesize\bfseries, text=darkslate] at (0, 1.65) {\textbf{AsyncTensorRLHF (Continuous Asynchronous Streams):}};
 
-        \node[anchor=east, font=\tiny\bfseries, text=slate] at (-0.1, 1.0) {Rollout GPU};
-        \node[task, fill=indigo!85, minimum width=1.85cm, minimum height=0.55cm] at (1.0, 1.0) {Rollout $v_0$};
-        \node[task, fill=indigo!85, minimum width=1.85cm, minimum height=0.55cm] at (3.0, 1.0) {Rollout $v_1$};
-        \node[task, fill=indigo!85, minimum width=1.85cm, minimum height=0.55cm] at (5.0, 1.0) {Rollout $v_2$};
-        \node[task, fill=indigo!85, minimum width=1.85cm, minimum height=0.55cm] at (7.0, 1.0) {Rollout $v_3$};
+        \node[anchor=east, font=\scriptsize\bfseries, text=slate] at (-0.1, 1.05) {Rollout GPU};
+        \node[task, fill=indigo!85, minimum width=1.7cm, minimum height=0.55cm] at (0.95, 1.05) {Rollout $v_0$};
+        \node[task, fill=indigo!85, minimum width=1.7cm, minimum height=0.55cm] at (2.85, 1.05) {Rollout $v_1$};
+        \node[task, fill=indigo!85, minimum width=1.7cm, minimum height=0.55cm] at (4.75, 1.05) {Rollout $v_2$};
+        \node[task, fill=indigo!85, minimum width=1.7cm, minimum height=0.55cm] at (6.65, 1.05) {Rollout $v_3$};
 
-        \node[anchor=east, font=\tiny\bfseries, text=slate] at (-0.1, 0.2) {Trainer GPU};
-        \node[task, fill=emerald!85!black, minimum width=2.1cm, minimum height=0.55cm] at (1.4, 0.2) {Train Step $v_1$};
-        \node[task, fill=emerald!85!black, minimum width=2.1cm, minimum height=0.55cm] at (3.7, 0.2) {Train Step $v_2$};
-        \node[task, fill=emerald!85!black, minimum width=2.1cm, minimum height=0.55cm] at (6.0, 0.2) {Train Step $v_3$};
-        \node[anchor=west, font=\tiny\bfseries, text=emerald!80!black] at (7.2, 0.2) {\textbf{100\% Duty Cycle}};
+        \node[anchor=east, font=\scriptsize\bfseries, text=slate] at (-0.1, 0.25) {Trainer GPU};
+        \node[task, fill=emerald!85!black, minimum width=1.85cm, minimum height=0.55cm] at (1.45, 0.25) {Train Step $v_1$};
+        \node[task, fill=emerald!85!black, minimum width=1.85cm, minimum height=0.55cm] at (3.55, 0.25) {Train Step $v_2$};
+        \node[task, fill=emerald!85!black, minimum width=1.85cm, minimum height=0.55cm] at (5.65, 0.25) {Train Step $v_3$};
+        \node[anchor=west, font=\tiny\bfseries, text=emerald!80!black] at (6.75, 0.25) {\textbf{100\% Active}};
 
         % Time axis for Async
-        \draw[axis] (0, -0.3) -- (7.8, -0.3) node[right, font=\tiny\bfseries, text=slate] {Time ($t$)};
+        \draw[axis] (0, -0.25) -- (7.8, -0.25) node[right, font=\tiny\bfseries, text=slate] {Time ($t$)};
     \end{tikzpicture}
     }
-    \caption{Execution schedule comparison: Synchronous RLHF incurs massive idle bubbles, whereas AsyncTensorRLHF achieves continuous $100\%$ GPU utilization through decoupled concurrent execution.}
+    \caption{Execution schedule comparison: Synchronous RLHF incurs massive idle bubbles ($50\%$ duty cycle waste), whereas AsyncTensorRLHF achieves continuous $100\%$ GPU utilization through decoupled concurrent execution.}
     \label{fig:timeline}
 \end{figure}
 
@@ -253,37 +253,54 @@ The group loss objective is:
     \centering
     \resizebox{\textwidth}{!}{
     \begin{tikzpicture}[
-        box/.style={rectangle, draw=darkslate!80, fill=lightgray!50, rounded corners=4pt, text centered, minimum height=2.2em, font=\small},
-        action/.style={rectangle, draw=indigo!80, fill=indigo!10, rounded corners=4pt, text centered, minimum height=2.2em, font=\small\bfseries},
-        train/.style={rectangle, draw=emerald!80, fill=emerald!10, rounded corners=4pt, text centered, minimum height=2.2em, font=\small\bfseries},
-        buff/.style={rectangle, draw=amber!80, fill=amber!10, rounded corners=4pt, text centered, minimum height=2.2em, font=\small\bfseries},
+        font=\sffamily,
+        box/.style={rectangle, draw=darkslate!70, fill=darkslate!6, rounded corners=5pt, align=center, text width=15.0cm, minimum height=0.9cm, font=\small},
+        rollout_box/.style={rectangle, draw=indigo!80, fill=indigo!8, rounded corners=5pt, align=center, minimum height=1.05cm, font=\small},
+        reward_box/.style={rectangle, draw=indigo!90, fill=indigo!18, rounded corners=5pt, align=center, minimum height=1.05cm, font=\small},
+        vram_box/.style={rectangle, draw=teal!80, fill=teal!10, rounded corners=5pt, align=center, minimum height=1.05cm, font=\small},
+        buff_box/.style={rectangle, draw=amber!80, fill=amber!10, rounded corners=5pt, align=center, text width=15.0cm, minimum height=1.05cm, font=\small},
+        train_box/.style={rectangle, draw=emerald!80, fill=emerald!10, rounded corners=5pt, align=center, minimum height=1.05cm, font=\small},
         arr/.style={-{Stealth[length=2.5mm]}, thick, darkslate!80}
     ]
-        % Row 1: Orchestrator
-        \node[box, fill=darkslate!10, minimum width=15cm, minimum height=1.1cm] (orch) at (7.5, 4.5) {\textbf{Orchestrator Control Plane}: Version Counter $v$ \quad$\vert$\quad Asynchronous Dispatcher \quad$\vert$\quad Periodic Weight Sync};
+        % Row 1: Orchestrator Control Plane
+        \node[box] (orch) at (7.6, 5.0) {
+            \textbf{Orchestrator Control Plane} \quad$\vert$\quad Version Counter $v$ \quad$\vert$\quad Asynchronous Dispatcher \quad$\vert$\quad Periodic Weight Sync $\theta_{t+1}$
+        };
         
-        % Row 2: Rollout Cluster & Rewards
-        \node[action, minimum width=4.5cm] (rollout) at (2.8, 2.7) {Rollout Worker Pool (HF / vLLM)};
-        \node[action, fill=indigo!20, minimum width=5.0cm] (reward) at (8.5, 2.7) {In-VRAM Reward Engine (\texttt{.unfold()})};
-        \node[box, minimum width=2.4cm] (vram) at (13.5, 2.7) {GPU VRAM Zero-Copy};
-
-        % Row 3: Replay Buffer Subsystems
-        \node[buff, minimum width=15cm, minimum height=1.1cm] (buffer) at (7.5, 1.0) {
-            \textbf{Experience Subsystem}: \texttt{BoundedReplayBuffer} \quad$\longleftrightarrow$\quad \texttt{VersionedBuffer} (Staleness Eviction: $\tau \le \tau_{\max}$) \quad$\longleftrightarrow$\quad \texttt{GroupBuffer} (GRPO)
+        % Row 2: Rollout Cluster & Rewards & HBM
+        \node[rollout_box, minimum width=4.5cm] (rollout) at (2.4, 3.2) {
+            \textbf{Rollout Cluster (HF / vLLM)} \\ {\scriptsize Multi-Stream Autoregressive Generation}
+        };
+        \node[reward_box, minimum width=4.7cm] (reward) at (8.7, 3.2) {
+            \textbf{In-VRAM Reward Engine} \\ {\scriptsize Fused \texttt{.unfold()} Syntax \& Pattern Verifier}
+        };
+        \node[vram_box, minimum width=3.3cm] (vram) at (14.0, 3.2) {
+            \textbf{GPU VRAM Memory} \\ {\scriptsize Zero-Copy Shared Tensors}
         };
 
-        % Row 4: Trainer Cluster
-        \node[train, minimum width=6.5cm] (trainer) at (4.0, -0.8) {Trainer Worker (PPO / M2PO / GRPO Loss)};
-        \node[train, fill=emerald!20, minimum width=6.5cm] (opt) at (11.0, -0.8) {AdamW Optimizer ($\theta_{t+1}$) $\longrightarrow$ Version Bump};
+        % Row 3: Replay Buffer Subsystems
+        \node[buff_box] (buffer) at (7.6, 1.4) {
+            \textbf{Lock-Free Experience Subsystem}: \texttt{BoundedBuffer} (FIFO) \quad$\longleftrightarrow$\quad \texttt{VersionedBuffer} ($\tau \le \tau_{\max}$) \quad$\longleftrightarrow$\quad \texttt{GroupBuffer} (GRPO)
+        };
+
+        % Row 4: Trainer & Optimizer
+        \node[train_box, minimum width=6.4cm] (trainer) at (3.5, -0.4) {
+            \textbf{Trainer Worker (Async PPO / M2PO / GRPO)} \\ {\scriptsize Importance-Weighted Loss $\cdot$ FlashAttention $\cdot$ CUDA Streams}
+        };
+        \node[train_box, fill=emerald!22, minimum width=5.8cm] (opt) at (11.8, -0.4) {
+            \textbf{AdamW Optimizer \& Version Control} \\ {\scriptsize In-Place Weight Step $\theta_{t+1} \longrightarrow$ Increment Version $v$}
+        };
 
         % Arrows
-        \draw[arr] (orch.south -| rollout.north) -- node[left, font=\scriptsize] {Prompts} (rollout.north);
-        \draw[arr] (rollout) -- node[above, font=\scriptsize] {Token IDs $Y$} (reward);
-        \draw[arr] (reward) -- node[above, font=\scriptsize] {Zero-Copy} (vram);
-        \draw[arr] (reward.south) -- node[right, font=\scriptsize] {$(x, y, r, \log \pi, v_e)$} (reward.south |- buffer.north);
-        \draw[arr] (buffer.south -| trainer.north) -- node[left, font=\scriptsize] {Sample Batch $B$} (trainer.north);
-        \draw[arr] (trainer) -- node[above, font=\scriptsize] {Gradients $\nabla_\theta$} (opt);
-        \draw[arr, dashed] (opt.north) -- ++(0, 1.8) -- node[right, font=\scriptsize] {Weight Broadcast $\theta_{t+1}$} (orch.south -| opt.north);
+        \draw[arr] (orch.south -| rollout.north) -- node[left, font=\scriptsize] {Prompts $x \sim \mathcal{D}_x$} (rollout.north);
+        \draw[arr] (rollout) -- node[above, font=\tiny\bfseries, text=darkslate!80] {Tokens $Y$} (reward);
+        \draw[arr] (reward) -- node[above, font=\tiny\bfseries, text=darkslate!80] {Zero-Copy} (vram);
+        \draw[arr] (reward.south) -- node[right, font=\scriptsize] {Experience $(x, y, r, \log \pi, v_e)$} (reward.south |- buffer.north);
+        \draw[arr] (buffer.south -| trainer.north) -- node[left, font=\scriptsize] {Sample Batch $(B, L)$} (trainer.north);
+        \draw[arr] (trainer) -- node[above, font=\tiny\bfseries, text=darkslate!80] {Gradients $\nabla_\theta$} (opt);
+        
+        % Clean exterior weight broadcast route with strict outside clearance
+        \draw[arr, dashed, darkslate!70] (opt.east) -- (16.2, -0.4) -- node[right, font=\scriptsize] {Weight Broadcast $\theta_{t+1}$} (16.2, 5.0) -- (orch.east);
     \end{tikzpicture}
     }
     \caption{Architectural topology of AsyncTensorRLHF, showing disaggregated dataflow between the Orchestrator, Rollout Workers, In-VRAM Reward Engine, Versioned Replay Buffer, and Trainer Workers.}
@@ -325,46 +342,50 @@ AsyncTensorRLHF executes reward verification entirely on GPU tensors. Given a ba
 \begin{tikzpicture}[
     font=\sffamily,
     cell/.style={rectangle, draw=darkslate!80, fill=white, minimum width=0.6cm, minimum height=0.6cm, text centered, font=\scriptsize\bfseries},
-    eos/.style={rectangle, draw=rose!80, fill=rose!20, minimum width=0.6cm, minimum height=0.6cm, text centered, font=\scriptsize\bfseries, text=rose!80!black},
-    mask/.style={rectangle, draw=slate!40, fill=slate!10, minimum width=0.6cm, minimum height=0.6cm, text centered, font=\scriptsize, text=slate!40},
-    win/.style={rectangle, rounded corners=2pt, draw=indigo!80, fill=indigo!15, dashed, thick},
+    eos/.style={rectangle, draw=rose!80, fill=rose!20, minimum width=0.65cm, minimum height=0.6cm, text centered, font=\scriptsize\bfseries, text=rose!80!black},
+    mask/.style={rectangle, draw=slate!40, fill=slate!10, minimum width=0.6cm, minimum height=0.6cm, text centered, font=\scriptsize, text=slate!45},
     target/.style={rectangle, draw=indigo!80, fill=indigo!20, minimum width=0.6cm, minimum height=0.6cm, text centered, font=\scriptsize\bfseries, text=indigo!90!black},
+    match/.style={rectangle, rounded corners=3pt, draw=indigo!80, fill=indigo!10, font=\scriptsize\bfseries, text=indigo!90!black, inner sep=4pt},
+    result/.style={rectangle, rounded corners=3pt, draw=emerald!80, fill=emerald!20, font=\scriptsize\bfseries, text=emerald!90!black, inner sep=4pt},
     arr/.style={-{Stealth[length=2mm]}, thick, darkslate!80}
 ]
-    % Title
-    \node[anchor=west, font=\scriptsize\bfseries, text=darkslate] at (0, 3.4) {Generated Token Sequence Tensor $Y_b \in \mathbb{N}^L$ in GPU VRAM:};
+    % Title 1
+    \node[anchor=west, font=\scriptsize\bfseries, text=darkslate] at (0, 3.65) {Generated Token Sequence Tensor $Y_b \in \mathbb{N}^L$ (GPU VRAM):};
+
+    % Sliding window highlight drawn BEHIND cells
+    \draw[rectangle, rounded corners=3pt, draw=indigo!85, fill=indigo!10, dashed, thick] (0.2, 2.22) rectangle (2.4, 3.02);
+    \node[font=\tiny\bfseries, text=indigo!90!black, anchor=south] at (1.3, 3.05) {Strided Window $w_0$ ($K=3$)};
 
     % Token cells
-    \node[cell] (t1) at (0.4, 2.7) {$y_1$};
-    \node[cell] (t2) at (1.0, 2.7) {$y_2$};
-    \node[cell] (t3) at (1.6, 2.7) {$y_3$};
-    \node[cell] (t4) at (2.2, 2.7) {$y_4$};
-    \node[eos]  (t5) at (2.8, 2.7) {EOS};
-    \node[mask] (t6) at (3.4, 2.7) {$y_6$};
-    \node[mask] (t7) at (4.0, 2.7) {$y_7$};
+    \node[cell] (t1) at (0.55, 2.62) {$y_1$};
+    \node[cell] (t2) at (1.25, 2.62) {$y_2$};
+    \node[cell] (t3) at (1.95, 2.62) {$y_3$};
+    \node[cell] (t4) at (2.65, 2.62) {$y_4$};
+    \node[eos]  (t5) at (3.38, 2.62) {EOS};
+    \node[mask] (t6) at (4.08, 2.62) {$y_6$};
+    \node[mask] (t7) at (4.78, 2.62) {$y_7$};
+    \node[font=\scriptsize, text=slate!60] at (5.35, 2.62) {$\dots$};
 
-    % EOS detection pointer
-    \draw[arr, rose!80!black] (2.8, 2.0) -- (t5.south);
-    \node[font=\tiny\bfseries, text=rose!80!black, anchor=north] at (2.8, 2.0) {First EOS: $e_b = 5$};
-    \node[font=\tiny, text=slate, anchor=north] at (3.7, 2.0) {(Masked Tail)};
+    % EOS detection pointer & cleanly anchored labels
+    \draw[arr, rose!80!black] (3.38, 1.85) -- (t5.south);
+    \node[font=\tiny\bfseries, text=rose!80!black, anchor=east] at (3.15, 1.55) {First EOS ($e_b=5$)};
+    \node[font=\tiny, text=slate!70, anchor=west] at (3.85, 1.55) {Tail Masked};
 
-    % Sliding window unfold
-    \draw[win] (0.05, 2.35) rectangle (1.95, 3.05);
-    \node[font=\tiny\bfseries, text=indigo!80!black, anchor=south] at (1.0, 3.05) {Window $w_0$ ($K=3$)};
+    % Title 2
+    \node[anchor=west, font=\scriptsize\bfseries, text=darkslate] at (0, 0.95) {Target Pattern $P_b \in \mathbb{N}^K$:};
 
-    % Target pattern
-    \node[anchor=west, font=\scriptsize\bfseries, text=darkslate] at (0, 1.2) {Target Pattern $P_b \in \mathbb{N}^K$:};
-    \node[target] (p1) at (0.4, 0.6) {$p_1$};
-    \node[target] (p2) at (1.0, 0.6) {$p_2$};
-    \node[target] (p3) at (1.6, 0.6) {$p_3$};
+    % Target pattern cells
+    \node[target] (p1) at (0.55, 0.35) {$p_1$};
+    \node[target] (p2) at (1.25, 0.35) {$p_2$};
+    \node[target] (p3) at (1.95, 0.35) {$p_3$};
 
-    % Equality operator
-    \node[font=\small\bfseries, text=indigo] at (2.4, 0.6) {$\equiv$};
-    \node[rectangle, rounded corners=3pt, draw=indigo!80, fill=indigo!10, font=\scriptsize\bfseries, text=indigo!90!black, inner sep=4pt] at (3.8, 0.6) {$(W_b == P_b).\text{all}(1)$};
+    % Equality & match
+    \node[font=\small\bfseries, text=indigo] at (2.7, 0.35) {$\equiv$};
+    \node[match] at (4.15, 0.35) {$(W_b == P_b).\text{all}(1)$};
 
     % Output
-    \draw[arr] (4.9, 0.6) -- (5.4, 0.6);
-    \node[rectangle, rounded corners=3pt, draw=emerald!80, fill=emerald!20, font=\scriptsize\bfseries, text=emerald!90!black, inner sep=4pt] at (6.2, 0.6) {$R_b \in \{0, 1\}$};
+    \draw[arr] (5.45, 0.35) -- (5.95, 0.35);
+    \node[result] at (6.8, 0.35) {$R_b \in \{0, 1\}$};
 \end{tikzpicture}
 }
 \caption{In-VRAM Sliding Window Convolution: Strided \texttt{.unfold()} constructs a virtual 2D tensor view of generated tokens in GPU registers without CPU memory copying, verifying reasoning syntax in sub-millisecond latency.}
