@@ -1,75 +1,60 @@
-# vLLM async engine wrapper
-
-"""A thin wrapper around vLLM's AsyncLLMEngine.
-
-The real implementation would import `vllm` and create an engine that can
-asynchronously generate token sequences.  Here we provide a minimal stub that
-illustrates the expected API so the rest of the framework can be imported
-without pulling the heavy dependency during unit‑tests.
-
-Key methods:
-    - ``__init__(model_path, tokenizer, **engine_kwargs)`` – creates the engine.
-    - ``async_generate(prompts, sampling_params)`` – returns an async generator
-      yielding ``GenerationResult`` objects.  Each result must expose:
-        * ``ids`` (torch.Tensor of token ids, shape ``(seq_len,)``)
-        * ``logprobs`` (torch.Tensor of log‑probabilities)
-        * ``input_ids`` (original prompt token ids)
-        * ``gt_ids`` (ground‑truth answer token ids, optional)
-        * ``eos_token_id`` (int)
-"""
+# Pure-Python stub rollout engine — no vLLM, no GPU, no Ray.
+# Replaces vLLM in Phase 3 for CPU-only testing of the async rollout loop.
 
 import asyncio
-from typing import List, AsyncGenerator
+import random
+from typing import Tuple
+
 import torch
 
-# In a real implementation you would import the actual vLLM classes:
-# from vllm import AsyncLLMEngine, SamplingParams, Request
 
-class GenerationResult:
-    """Container for a single generated sequence."""
+class StubEngine:
+    """Minimal async generation engine for testing without vLLM.
 
-    def __init__(self, ids, logprobs, input_ids, gt_ids, eos_token_id):
-        self.ids = ids  # torch.Tensor (seq_len,)
-        self.logprobs = logprobs  # torch.Tensor (seq_len,)
-        self.input_ids = input_ids
-        self.gt_ids = gt_ids
-        self.eos_token_id = eos_token_id
-
-
-class VLLMEngineWrapper:
-    """Placeholder async engine.
-
-    To use the real engine replace the body of ``async_generate`` with calls to
-    vLLM's ``engine.generate`` async iterator.
+    Generates tokens by sampling uniformly from [0, vocab_size) until EOS
+    or max_new_tokens is reached. Uses asyncio.sleep(0.001) to force real
+    coroutine yielding so that concurrent callers actually interleave.
     """
 
-    def __init__(self, model_path: str, tokenizer=None, **engine_kwargs):
-        self.model_path = model_path
-        self.tokenizer = tokenizer
-        # store kwargs for possible real engine creation
-        self.engine_kwargs = engine_kwargs
-        # self.engine = AsyncLLMEngine(model=model_path, **engine_kwargs)
-        # For the stub we do nothing.
+    def __init__(self, vocab_size: int, max_new_tokens: int, eos_token_id: int):
+        self.vocab_size = vocab_size
+        self.max_new_tokens = max_new_tokens
+        self.eos_token_id = eos_token_id
 
     async def async_generate(
-        self,
-        prompts: List[dict],
-        sampling_params: dict = None,
-    ) -> AsyncGenerator[GenerationResult, None]:
-        """Yield a ``GenerationResult`` for each prompt.
+        self, prompt_ids: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Generate tokens asynchronously.
 
-        The stub simply echoes the prompt tokens and appends a dummy EOS token.
+        Parameters
+        ----------
+        prompt_ids : torch.Tensor
+            1-D integer tensor (the prompt). Not used for token generation in
+            the stub, but accepted to match the real engine's interface.
+
+        Returns
+        -------
+        generated_ids : torch.Tensor
+            1-D long tensor of newly generated token IDs (excludes prompt).
+        log_probs : torch.Tensor
+            1-D float tensor of per-token log-probabilities (negative floats).
         """
-        for prompt in prompts:
-            # ``prompt`` is expected to contain ``input_ids`` (torch.Tensor)
-            input_ids = prompt["input_ids"]
-            gt_ids = prompt.get("gt_ids")
-            eos_id = prompt.get("eos_token_id", 2)  # assume token id 2 = ``</s>``
-            # generate a fake continuation of length 5
-            gen_ids = torch.cat([input_ids, torch.arange(100, 105, device=input_ids.device)])
-            # fake log probabilities (uniform)
-            logprobs = torch.full((gen_ids.shape[0],), -torch.log(torch.tensor(gen_ids.shape[0], dtype=torch.float)), device=gen_ids.device)
-            result = GenerationResult(gen_ids, logprobs, input_ids, gt_ids, eos_id)
-            # simulate async delay
-            await asyncio.sleep(0.001)
-            yield result
+        # Yield once to the event loop so concurrent callers can interleave.
+        await asyncio.sleep(0.001)
+
+        generated_ids = []
+        log_probs = []
+
+        for _ in range(self.max_new_tokens):
+            token_id = random.randint(0, self.vocab_size - 1)
+            # Uniform distribution: log(1/vocab_size)
+            log_prob = -torch.log(torch.tensor(float(self.vocab_size))).item()
+            generated_ids.append(token_id)
+            log_probs.append(log_prob)
+            if token_id == self.eos_token_id:
+                break
+
+        return (
+            torch.tensor(generated_ids, dtype=torch.long),
+            torch.tensor(log_probs, dtype=torch.float32),
+        )
