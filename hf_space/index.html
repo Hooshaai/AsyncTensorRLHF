@@ -40,7 +40,10 @@
           <span class="text-xs px-2 py-0.5 ml-2 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">v1.0.0</span>
         </div>
       </div>
-      <div class="flex items-center space-x-4">
+        <a href="paper.pdf" target="_blank" class="flex items-center space-x-2 text-sm bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-1.5 rounded-lg shadow-sm transition font-medium">
+          <i data-lucide="file-text" class="w-4 h-4"></i>
+          <span>Read Paper (PDF)</span>
+        </a>
         <a href="https://github.com/Hooshaai/AsyncTensorRLHF" target="_blank" class="flex items-center space-x-2 text-sm text-slate-400 hover:text-white px-3 py-1.5 rounded-md hover:bg-slate-800 transition">
           <i data-lucide="github" class="w-4 h-4"></i>
           <span>GitHub</span>
@@ -48,7 +51,7 @@
         <a href="https://huggingface.co/Hooshaai/Qwen2.5-0.5B-AsyncTensorRLHF" target="_blank" class="flex items-center space-x-2 text-sm bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg shadow-sm transition font-medium">
           <span>🚀 Trained Qwen Model</span>
         </a>
-        <a href="https://huggingface.co/tahamajs/AsyncTensorRLHF" target="_blank" class="flex items-center space-x-2 text-sm bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-1.5 rounded-lg shadow-sm transition font-medium">
+        <a href="https://huggingface.co/tahamajs/AsyncTensorRLHF" target="_blank" class="flex items-center space-x-2 text-sm bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg shadow-sm transition font-medium">
           <span>🤗 Model Card</span>
         </a>
       </div>
@@ -112,6 +115,10 @@
         <button onclick="switchTab('tab-arch')" id="btn-tab-arch" class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold transition text-slate-400 hover:text-white flex items-center space-x-2">
           <i data-lucide="layers" class="w-4 h-4"></i>
           <span>4. Architecture & Pipeline</span>
+        </button>
+        <button onclick="switchTab('tab-paper')" id="btn-tab-paper" class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold transition text-slate-400 hover:text-white flex items-center space-x-2">
+          <i data-lucide="file-text" class="w-4 h-4"></i>
+          <span>5. Research Paper</span>
         </button>
       </div>
 
@@ -352,6 +359,115 @@
               <li>• 8.05M tokens/sec GRPO</li>
               <li>• Asynchronous weight sync</li>
             </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 5: Research Paper -->
+      <div id="tab-paper" class="tab-content hidden">
+        <div class="space-y-6">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-950 p-6 rounded-xl border border-slate-800">
+            <div>
+              <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">Formal Research Paper</span>
+              <h3 class="text-2xl font-bold text-white mt-2">AsyncTensorRLHF: High-Throughput Asynchronous RLHF with In-VRAM Tensor-Native Rewards</h3>
+              <p class="text-xs text-slate-400 mt-1">Taha Majlesi • Hooshaai Lab • March 2026</p>
+            </div>
+            <div class="flex items-center space-x-3">
+              <a href="paper.pdf" target="_blank" download="AsyncTensorRLHF_Paper.pdf" class="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm px-4 py-2.5 rounded-lg shadow-lg shadow-indigo-600/20 transition">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span>Download PDF (429 KB)</span>
+              </a>
+              <a href="paper.pdf" target="_blank" class="flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-sm px-4 py-2.5 rounded-lg border border-slate-700 transition">
+                <i data-lucide="external-link" class="w-4 h-4"></i>
+                <span>Open in Tab</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Abstract and Key Findings -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="md:col-span-2 p-6 rounded-xl bg-slate-950 border border-slate-800">
+              <h4 class="font-bold text-slate-200 mb-3 text-sm uppercase tracking-wider flex items-center space-x-2">
+                <i data-lucide="book-open" class="w-4 h-4 text-indigo-400"></i>
+                <span>Abstract</span>
+              </h4>
+              <p class="text-sm text-slate-300 leading-relaxed text-justify font-sans">
+                Post-training reinforcement learning for Large Language Models (LLMs)—including Proximal Policy Optimization (PPO) and Group Relative Policy Optimization (GRPO)—traditionally couples autoregressive rollout generation, string deserialization, and rule verification on CPU hosts. We introduce <strong>AsyncTensorRLHF</strong>, an asynchronous RLHF architecture that completely eliminates host-device serialization bottlenecks through in-VRAM sliding-window token pattern matching and guarantees stable off-policy updates via Second-Moment Trust Region Policy Optimization (<strong>M2PO</strong>). Evaluated on NVIDIA Ada Lovelace architecture, AsyncTensorRLHF achieves <strong>8.05M tokens/sec</strong> under GRPO and reduces staleness gradient variance by <strong>62.1%</strong> at off-policy lag $\tau=8$.
+              </p>
+
+              <h4 class="font-bold text-slate-200 mt-6 mb-3 text-sm uppercase tracking-wider flex items-center space-x-2">
+                <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+                <span>Core Theoretical Contributions</span>
+              </h4>
+              <ul class="text-sm text-slate-400 space-y-2">
+                <li class="flex items-start space-x-2">
+                  <span class="text-indigo-400 font-bold">•</span>
+                  <span><strong>Zero-Copy Sliding-Window Convolution:</strong> Unfolds token ID tensors directly across GPU memory lanes, evaluating deterministic reasoning verifiers in $O(1)$ host roundtrips.</span>
+                </li>
+                <li class="flex items-start space-x-2">
+                  <span class="text-indigo-400 font-bold">•</span>
+                  <span><strong>Second-Moment Trust Region (M2PO):</strong> Replaces heuristic surrogate clipping with an exact quadratic second-moment penalty $\frac{\gamma}{2}\mathbb{E}[(r_t(\theta)-1)^2 |A_t|]$ proven to bound Fisher-Divergence under asynchronous rollout staleness.</span>
+                </li>
+                <li class="flex items-start space-x-2">
+                  <span class="text-indigo-400 font-bold">•</span>
+                  <span><strong>Lock-Free Ring Buffer with Replay Filtering:</strong> High-speed CUDA circular buffer achieving 411,691 samples/second with stale sample invalidation.</span>
+                </li>
+              </ul>
+            </div>
+
+            <div class="space-y-4">
+              <div class="p-5 rounded-xl bg-slate-950 border border-slate-800">
+                <h4 class="font-bold text-white text-sm mb-3">Paper Information</h4>
+                <div class="space-y-2.5 text-xs">
+                  <div class="flex justify-between pb-2 border-b border-slate-800">
+                    <span class="text-slate-500">Format:</span>
+                    <span class="text-slate-300 font-mono">IEEE 2-Column</span>
+                  </div>
+                  <div class="flex justify-between pb-2 border-b border-slate-800">
+                    <span class="text-slate-500">Length:</span>
+                    <span class="text-slate-300 font-mono">6 Pages</span>
+                  </div>
+                  <div class="flex justify-between pb-2 border-b border-slate-800">
+                    <span class="text-slate-500">References:</span>
+                    <span class="text-slate-300 font-mono">15 Cited Papers</span>
+                  </div>
+                  <div class="flex justify-between pb-2 border-b border-slate-800">
+                    <span class="text-slate-500">Algorithms:</span>
+                    <span class="text-slate-300 font-mono">Algorithm 1 (Async RLHF)</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-500">Target Venue:</span>
+                    <span class="text-indigo-400 font-medium">NeurIPS / ICLR 2026</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="p-5 rounded-xl bg-slate-950 border border-slate-800">
+                <h4 class="font-bold text-white text-sm mb-2">BibTeX Citation</h4>
+                <pre class="bg-slate-900 p-3 rounded text-[11px] font-mono text-slate-300 overflow-x-auto select-all leading-tight border border-slate-800">@article{majlesi2026asynctensorrlhf,
+  title   = {AsyncTensorRLHF: High-Throughput
+             Asynchronous RLHF with In-VRAM
+             Tensor-Native Rewards},
+  author  = {Majlesi, Taha},
+  journal = {arXiv preprint arXiv:2603.XXXXX},
+  year    = {2026}
+}</pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- Embedded PDF Viewer -->
+          <div class="p-6 rounded-xl bg-slate-950 border border-slate-800">
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="font-bold text-slate-200 text-sm uppercase tracking-wider flex items-center space-x-2">
+                <i data-lucide="file" class="w-4 h-4 text-indigo-400"></i>
+                <span>Document Preview</span>
+              </h4>
+              <span class="text-xs text-slate-500">6-Page High Resolution PDF</span>
+            </div>
+            <div class="w-full h-[750px] rounded-lg overflow-hidden border border-slate-800 bg-slate-900">
+              <iframe src="paper.pdf" class="w-full h-full" title="AsyncTensorRLHF Paper PDF"></iframe>
+            </div>
           </div>
         </div>
       </div>

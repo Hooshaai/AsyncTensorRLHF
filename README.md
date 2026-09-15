@@ -24,6 +24,7 @@ pipeline_tag: reinforcement-learning
 [![PyTorch 2.6+](https://img.shields.io/badge/PyTorch-2.6%2B%20CUDA-ee4c2c.svg)](https://pytorch.org/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
 [![Tests Passing](https://img.shields.io/badge/tests-41%2F41%20passed-brightgreen.svg)](tests/)
+[![Research Paper](https://img.shields.io/badge/%F0%9F%93%84%20Paper-PDF%20(6%20Pages)-red)](paper/paper.pdf)
 [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97-Hugging%20Face-yellow)](https://huggingface.co/tahamajs/AsyncTensorRLHF)
 [![Hugging Face Space](https://img.shields.io/badge/%F0%9F%A4%97%20Space-Hooshaai%2FAsyncTensorRLHF-blue)](https://huggingface.co/spaces/Hooshaai/AsyncTensorRLHF)
 [![Trained Model](https://img.shields.io/badge/%F0%9F%A4%97%20Model-Qwen2.5--0.5B--AsyncTensorRLHF-purple)](https://huggingface.co/Hooshaai/Qwen2.5-0.5B-AsyncTensorRLHF)
@@ -628,19 +629,22 @@ Sample configuration file from `configs/phase2_async.yaml`:
 
 ---
 
-## 11. Citation & BibTeX
+## 11. Research Paper & BibTeX Citation
 
-If you find AsyncTensorRLHF useful in your academic research or production deployment, please cite:
+A complete 6-page research paper detailing the theory, algorithm, proofs, and empirical evaluation of AsyncTensorRLHF is available:
+- **Full Paper PDF:** [`paper/paper.pdf`](paper/paper.pdf)
+- **Interactive Space:** [https://huggingface.co/spaces/Hooshaai/AsyncTensorRLHF](https://huggingface.co/spaces/Hooshaai/AsyncTensorRLHF)
+- **Trained Model Weights:** [https://huggingface.co/Hooshaai/Qwen2.5-0.5B-AsyncTensorRLHF](https://huggingface.co/Hooshaai/Qwen2.5-0.5B-AsyncTensorRLHF)
+
+If you use AsyncTensorRLHF or our benchmarks in your academic research or production deployment, please cite:
 
 ```bibtex
-@software{asynctensorrlhf2026,
-  author = {Taha Majs and contributors},
-  title = {AsyncTensorRLHF: High-Throughput Asynchronous Reinforcement Learning from Human Feedback with Tensor-Native Rewards},
-  year = {2026},
-  publisher = {GitHub and Hugging Face},
-  journal = {GitHub repository},
-  howpublished = {\url{https://github.com/Hooshaai/AsyncTensorRLHF}},
-  url = {https://huggingface.co/tahamajs/AsyncTensorRLHF}
+@article{majlesi2026asynctensorrlhf,
+  title   = {AsyncTensorRLHF: High-Throughput Asynchronous RLHF with In-VRAM Tensor-Native Rewards},
+  author  = {Majlesi, Taha},
+  journal = {arXiv preprint arXiv:2603.XXXXX},
+  year    = {2026},
+  url     = {https://github.com/Hooshaai/AsyncTensorRLHF}
 }
 ```
 

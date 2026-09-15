@@ -10,3 +10,7 @@ venv/
 log/
 *.log
 output/
+*.aux
+*.bbl
+*.blg
+*.out
