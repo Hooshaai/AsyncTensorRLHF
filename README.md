@@ -46,7 +46,7 @@ pipeline_tag: reinforcement-learning
   - [Asynchronous Sequence Diagram](#asynchronous-sequence-diagram)
   - [Zero-Copy In-VRAM vs. Traditional Host-Device Roundtrip](#zero-copy-in-vram-vs-traditional-host-device-roundtrip)
 - [3. Theoretical Foundations & Mathematical Formulations](#3-theoretical-foundations--mathematical-formulations)
-  - [3.1 Policy Gradient under Asynchronous Staleness $\tau$](#31-policy-gradient-under-asynchronous-staleness-tau)
+  - [3.1 Policy Gradient under Asynchronous Staleness (τ)](#31-policy-gradient-under-asynchronous-staleness-τ)
   - [3.2 Proximal Policy Optimization (PPO)](#32-proximal-policy-optimization-ppo)
   - [3.3 Second-Moment Trust Region Optimization (M2PO)](#33-second-moment-trust-region-optimization-m2po)
   - [3.4 Group Relative Policy Optimization (GRPO)](#34-group-relative-policy-optimization-grpo)
@@ -59,15 +59,10 @@ pipeline_tag: reinforcement-learning
   - [5.5 Orchestration & Version Management (`src/orchestrator/`)](#55-orchestration--version-management-srcorchestrator)
 - [6. Installation & Environment Setup](#6-installation--environment-setup)
 - [7. Verification & Benchmarking](#7-verification--benchmarking)
-  - [7.1 Running the 41-Test Comprehensive Suite](#71-running-the-41-test-comprehensive-suite)
-  - [7.2 Hardware Benchmarks on NVIDIA RTX 4070 GPU](#72-hardware-benchmarks-on-nvidia-rtx-4070-gpu)
 - [8. Developer Cookbook: Extending the Framework](#8-developer-cookbook-extending-the-framework)
-  - [Recipe 1: Integrating a Real Hugging Face LLM (e.g. Qwen / Llama)](#recipe-1-integrating-a-real-hugging-face-llm-eg-qwen--llama)
-  - [Recipe 2: Implementing Custom In-VRAM Reward Logic](#recipe-2-implementing-custom-in-vram-reward-logic)
-  - [Recipe 3: Distributed Multi-GPU Execution with Ray](#recipe-3-distributed-multi-gpu-execution-with-ray)
-- [9. Configuration Dictionary](#9-configuration-dictionary)
+- [9. Configuration Reference](#9-configuration-reference)
 - [10. Frequently Asked Questions (FAQ) & Troubleshooting](#10-frequently-asked-questions-faq--troubleshooting)
-- [11. Citation & BibTeX](#11-citation--bibtex)
+- [11. Research Paper & BibTeX Citation](#11-research-paper--bibtex-citation)
 - [12. License](#12-license)
 
 ---
@@ -76,7 +71,7 @@ pipeline_tag: reinforcement-learning
 
 ### The Traditional Synchronous RLHF Bottleneck
 
-Reinforcement Learning from Human Feedback (RLHF) has emerged as the standard paradigm for aligning large language models (LLMs). However, standard frameworks (such as conventional DeepSpeed-Chat, early TRL, and synchronous PPO pipelines) suffer from two fundamental performance ceilings:
+Modern Reinforcement Learning from Human Feedback (RLHF) for Large Language Models (LLMs)—including Proximal Policy Optimization (PPO) and Group Relative Policy Optimization (GRPO)—faces two critical engineering bottlenecks:
 
 1. **The CPU-GPU Memory Wall (SerDes Overhead)**:
    Rollout generates token sequences on the GPU. Standard reward computation then:
@@ -84,11 +79,15 @@ Reinforcement Learning from Human Feedback (RLHF) has emerged as the standard pa
    - Decodes IDs into UTF-8 strings (`tokenizer.decode()`).
    - Runs Python string matching, regular expressions, or rule-based scoring on the host CPU.
    - Converts scalar scores back into PyTorch tensors and transfers them across PCIe back into GPU memory (`.cuda()`).
-   In high-throughput generation regimes (batch size $\ge 64$, sequence length $\ge 1024$), CPU serialization and PCIe roundtrips introduce severe throughput degradation, consuming up to 30–50% of the entire pipeline duration.
+   In high-throughput generation regimes (batch size ≥ 64, sequence length ≥ 1024), CPU serialization and PCIe roundtrips introduce severe throughput degradation, consuming up to 30–50% of the entire pipeline duration.
 
 2. **The Synchronous Lockstep Barrier (GPU Underutilization)**:
    In synchronous PPO, rollout generation and trainer parameter optimization run in strict lockstep:
-   $$\text{Rollout}(\pi_{\theta_t}) \longrightarrow \text{Reward Evaluation} \longrightarrow \text{Train Step}(\theta_{t+1}) \longrightarrow \text{Wait for Rollout}$$
+
+   ```
+   Rollout(π_θ_t) ──▶ Reward Evaluation ──▶ Train Step(θ_t+1) ──▶ Wait for Rollout
+   ```
+
    While the trainer runs backpropagation, rollout GPU workers sit completely idle. Conversely, while rollout workers generate tokens autoregressively, training GPUs idle waiting for batches. This lockstep barrier causes severe GPU idle time ("bubble overhead"), frequently exceeding 40–60% of total cluster compute time.
 
 ```
@@ -108,8 +107,8 @@ Trainer GPU:  [...... IDLE ......] [==== TRAIN ====] [...... IDLE ......] [==== 
 
 2. **Asynchronous Continuous Rollout with Second-Moment Staleness Control (M2PO)**:
    Rollout workers continuously generate responses into a non-blocking, thread-safe experience replay buffer. The trainer continuously samples from the buffer and optimizes the policy. To handle the resulting off-policy divergence $\theta - \theta_{\text{old}}$, the framework incorporates:
-   - Dynamic staleness eviction: Experiences with age $\tau = v_{\text{current}} - v_{\text{data}} > \tau_{\text{max}}$ are immediately discarded.
-   - M2PO Second-Moment Trust Region Loss: Dynamically bounds the second moment of the importance weight $\mathbb{E}[r^2(\theta)]$, preventing policy collapse under asynchronous drift.
+   - Dynamic staleness eviction: Experiences with age $\tau = v_{\text{current}} - v_{\text{data}} \gt \tau_{\text{max}}$ are immediately discarded.
+   - M2PO Second-Moment Trust Region Loss: Dynamically bounds the second moment of the importance weight $\mathbb{E}[r(\theta)^2]$, preventing policy collapse under asynchronous drift.
    - Group-Aware Buffers for GRPO: Standardizes advantage estimates across groups of candidate generations per prompt.
 
 ```
@@ -201,15 +200,25 @@ Rollout Engine              Buffer               Trainer            VersionManag
 
 ## 3. Theoretical Foundations & Mathematical Formulations
 
-### 3.1 Policy Gradient under Asynchronous Staleness $\tau$
+### 3.1 Policy Gradient under Asynchronous Staleness (τ)
 
-In a distributed asynchronous RLHF pipeline, an experience tuple $(x, y, r, \log \pi_{\theta_{\text{old}}}(y|x))$ collected at policy version $\theta_{\text{old}}$ is consumed by the trainer at parameter version $\theta_{\text{current}}$, where $\tau = \text{version}(\theta_{\text{current}}) - \text{version}(\theta_{\text{old}}) \ge 0$.
+In a distributed asynchronous RLHF pipeline, an experience tuple $(x, y, r, \log \pi_{\theta_{\text{old}}}(y \mid x))$ collected at policy version $\theta_{\text{old}}$ is consumed by the trainer at parameter version $\theta_{\text{current}}$, where staleness is defined as:
 
-The policy gradient is:
-$$g(\theta) = \mathbb{E}_{(x,y) \sim \mathcal{D}}\left[ \frac{\nabla_\theta \pi_\theta(y|x)}{\pi_{\theta_{\text{old}}}(y|x)} A^{\pi_{\theta_{\text{old}}}}(x, y) \right]$$
+$$
+\tau = \text{version}(\theta_{\text{current}}) - \text{version}(\theta_{\text{old}}) \ge 0
+$$
 
-When staleness $\tau > 0$, the importance sampling weight $r_t(\theta) = \frac{\pi_\theta(y_t | x, y_{<t})}{\pi_{\theta_{\text{old}}}(y_t | x, y_{<t})}$ exhibits high variance:
-$$\text{Var}_{y \sim \pi_{\theta_{\text{old}}}}[r_t(\theta)] \approx \exp\left( D_{\chi^2}(\pi_\theta \parallel \pi_{\theta_{\text{old}}}) \right) - 1$$
+The policy gradient under importance sampling is:
+
+$$
+g(\theta) = \mathbb{E}_{(x,y) \sim \mathcal{D}}\left[ \frac{\nabla_\theta \pi_\theta(y \mid x)}{\pi_{\theta_{\text{old}}}(y \mid x)} A^{\pi_{\theta_{\text{old}}}}(x, y) \right]
+$$
+
+When staleness $\tau \gt 0$, the importance sampling weight $r_t(\theta) = \frac{\pi_\theta(y_t \mid x, y_{\lt t})}{\pi_{\theta_{\text{old}}}(y_t \mid x, y_{\lt t})}$ exhibits high variance:
+
+$$
+\text{Var}_{y \sim \pi_{\theta_{\text{old}}}}[r_t(\theta)] \approx \exp\left( D_{\chi^2}(\pi_\theta \parallel \pi_{\theta_{\text{old}}}) \right) - 1
+$$
 
 If $\tau$ grows without constraint, standard PPO clipping $\text{clip}(r_t(\theta), 1-\epsilon, 1+\epsilon)$ saturates, causing vanishing gradient updates on fresh tokens and destructive updates on stale outliers.
 
@@ -217,21 +226,33 @@ If $\tau$ grows without constraint, standard PPO clipping $\text{clip}(r_t(\thet
 
 AsyncTensorRLHF implements clipped PPO with per-token importance weighting:
 
-$$\mathcal{L}_{\text{PPO}}(\theta) = -\frac{1}{B \cdot L} \sum_{b=1}^B \sum_{t=1}^L \min\left( r_{b,t}(\theta) A_{b,t}, \; \text{clip}(r_{b,t}(\theta), 1-\epsilon, 1+\epsilon) A_{b,t} \right)$$
+$$
+\mathcal{L}_{\text{PPO}}(\theta) = -\frac{1}{B \cdot L} \sum_{b=1}^B \sum_{t=1}^L \min\left( r_{b,t}(\theta) A_{b,t}, \; \text{clip}(r_{b,t}(\theta), 1-\epsilon, 1+\epsilon) A_{b,t} \right)
+$$
 
-where:
-$$r_{b,t}(\theta) = \exp\left( \log \pi_\theta(y_{b,t} | x_b, y_{b,<t}) - \log \pi_{\theta_{\text{old}}}(y_{b,t} | x_b, y_{b,<t}) \right)$$
+where the per-token importance weight ratio is:
+
+$$
+r_{b,t}(\theta) = \exp\left( \log \pi_\theta(y_{b,t} \mid x_b, y_{b, \lt t}) - \log \pi_{\theta_{\text{old}}}(y_{b,t} \mid x_b, y_{b, \lt t}) \right)
+$$
 
 ### 3.3 Second-Moment Trust Region Optimization (M2PO)
 
 To guarantee stability under asynchronous rollout where $\tau \in [1, \tau_{\text{max}}]$, AsyncTensorRLHF incorporates **M2PO** (Second-Moment Trust Region Policy Optimization). M2PO constrains the empirical second moment of the importance weight:
 
-$$M_2 = \frac{1}{B \cdot L} \sum_{b=1}^B \sum_{t=1}^L r_{b,t}(\theta)^2$$
+$$
+M_2 = \frac{1}{B \cdot L} \sum_{b=1}^B \sum_{t=1}^L r_{b,t}(\theta)^2
+$$
 
 Tokens whose importance weight violates the second-moment threshold $r_{b,t}(\theta)^2 \ge \gamma_{\text{threshold}}$ are masked:
 
-$$m_{b,t} = \mathbb{I}\left( r_{b,t}(\theta)^2 < \gamma_{\text{threshold}} \right)$$
-$$\mathcal{L}_{\text{M2PO}}(\theta) = -\frac{\sum_{b=1}^B \sum_{t=1}^L m_{b,t} \cdot \min\left( r_{b,t}(\theta) A_{b,t}, \; \text{clip}(r_{b,t}(\theta), 1-\epsilon, 1+\epsilon) A_{b,t} \right)}{\max\left(1, \sum_{b=1}^B \sum_{t=1}^L m_{b,t}\right)}$$
+$$
+m_{b,t} = \mathbb{I}\left( r_{b,t}(\theta)^2 \lt \gamma_{\text{threshold}} \right)
+$$
+
+$$
+\mathcal{L}_{\text{M2PO}}(\theta) = -\frac{\sum_{b=1}^B \sum_{t=1}^L m_{b,t} \cdot \min\left( r_{b,t}(\theta) A_{b,t}, \; \text{clip}(r_{b,t}(\theta), 1-\epsilon, 1+\epsilon) A_{b,t} \right)}{\max\left(1, \sum_{b=1}^B \sum_{t=1}^L m_{b,t}\right)}
+$$
 
 This eliminates destructive gradient spikes caused by stale off-policy rollouts without stalling generation.
 
@@ -239,11 +260,19 @@ This eliminates destructive gradient spikes caused by stale off-policy rollouts 
 
 For mathematical, programmatic, and structured reasoning tasks (e.g. DeepSeek-Math, DeepSeek-R1), AsyncTensorRLHF implements **GRPO**. GRPO foregoes a learned critic model and instead normalizes advantages within a group of $G$ responses generated for the identical prompt $x$:
 
-$$\mu_g = \frac{1}{G} \sum_{i=1}^G R_{g,i}, \qquad \sigma_g = \sqrt{\frac{1}{G} \sum_{i=1}^G (R_{g,i} - \mu_g)^2} + \epsilon_{\text{eps}}$$
-$$\hat{A}_{g,i} = \frac{R_{g,i} - \mu_g}{\sigma_g}$$
+$$
+\mu_g = \frac{1}{G} \sum_{i=1}^G R_{g,i}, \qquad \sigma_g = \sqrt{\frac{1}{G} \sum_{i=1}^G (R_{g,i} - \mu_g)^2} + \epsilon_{\text{eps}}
+$$
+
+$$
+\hat{A}_{g,i} = \frac{R_{g,i} - \mu_g}{\sigma_g}
+$$
 
 The GRPO objective is:
-$$\mathcal{L}_{\text{GRPO}}(\theta) = -\frac{1}{B \cdot G \cdot L} \sum_{b=1}^B \sum_{i=1}^G \sum_{t=1}^L \min\left( r_{b,i,t}(\theta) \hat{A}_{b,i}, \; \text{clip}(r_{b,i,t}(\theta), 1-\epsilon, 1+\epsilon) \hat{A}_{b,i} \right)$$
+
+$$
+\mathcal{L}_{\text{GRPO}}(\theta) = -\frac{1}{B \cdot G \cdot L} \sum_{b=1}^B \sum_{i=1}^G \sum_{t=1}^L \min\left( r_{b,i,t}(\theta) \hat{A}_{b,i}, \; \text{clip}(r_{b,i,t}(\theta), 1-\epsilon, 1+\epsilon) \hat{A}_{b,i} \right)
+$$
 
 When all responses in a group receive identical rewards (e.g., all correct $R_i=1$ or all wrong $R_i=0$), $\sigma_g \to 0$. AsyncTensorRLHF's implementation adds numerical smoothing ($\epsilon = 10^{-8}$) to ensure $\hat{A}_{g,i} \to 0$ without `NaN` or `Inf` divergence.
 
@@ -496,10 +525,10 @@ ALL VERIFICATIONS AND BENCHMARKS COMPLETED SUCCESSFULLY (EXIT 0)
 
 #### Detailed Hardware Benchmark Profiles:
 
-##### A. Policy Loss & Backpropagation Throughput ($B=64, L=256$)
+##### A. Policy Loss & Backpropagation Throughput (Batch = 64, Length = 256)
 | Algorithm | Forward + Backward Latency | Effective Throughput | Status |
 |---|:---:|:---:|:---:|
-| **GRPO ($G=4$)** | **2.03 ms** | **8,058,669 tokens / sec** | **PASSED** |
+| **GRPO (Group Size G = 4)** | **2.03 ms** | **8,058,669 tokens / sec** | **PASSED** |
 | **PPO (Standard Clipped)** | **2.42 ms** | **6,763,177 tokens / sec** | **PASSED** |
 | **M2PO (Second-Moment Trust Region)** | **5.98 ms** | **2,739,289 tokens / sec** | **PASSED** |
 
@@ -509,15 +538,15 @@ ALL VERIFICATIONS AND BENCHMARKS COMPLETED SUCCESSFULLY (EXIT 0)
 | **Push (`BoundedReplayBuffer`)** | 20,000 experience items | **312,283 ops / sec** | 0.0032 ms / push |
 | **Sample Batch (`batch_size=64`)** | 20,000 experience items | **411,691 items / sec** | 0.0024 ms / item |
 
-##### C. Asynchronous Staleness ($\tau$) vs. Gradient Variance Reduction
-| Policy Staleness ($\tau$) | PPO Gradient Norm | M2PO Gradient Norm | Variance Reduction ($\%$) |
+##### C. Asynchronous Staleness (τ) vs. Gradient Variance Reduction
+| Policy Staleness (τ) | PPO Gradient Norm | M2PO Gradient Norm | Variance Reduction (%) |
 |:---:|:---:|:---:|:---:|
-| $\tau = 0$ (On-policy synchronous) | 0.0218 | 0.0218 | **0.0%** |
-| $\tau = 1$ | 0.0212 | 0.0212 | **0.0%** |
-| $\tau = 2$ | 0.0202 | 0.0201 | **0.3%** |
-| $\tau = 3$ | 0.0221 | 0.0204 | **7.7%** |
-| $\tau = 5$ | 0.0265 | 0.0198 | **25.6%** |
-| $\tau = 8$ (Extreme asynchronous drift) | 0.0502 | 0.0190 | **62.1%** |
+| τ = 0 (On-policy synchronous) | 0.0218 | 0.0218 | **0.0%** |
+| τ = 1 | 0.0212 | 0.0212 | **0.0%** |
+| τ = 2 | 0.0202 | 0.0201 | **0.3%** |
+| τ = 3 | 0.0221 | 0.0204 | **7.7%** |
+| τ = 5 | 0.0265 | 0.0198 | **25.6%** |
+| τ = 8 (Extreme asynchronous drift) | 0.0502 | 0.0190 | **62.1%** |
 
 
 ---
@@ -607,8 +636,8 @@ Sample configuration file from `configs/phase2_async.yaml`:
 | `rollout.batch_size` | `int` | `64` | Number of concurrent prompts processed per rollout worker |
 | `rollout.max_new_tokens` | `int` | `512` | Maximum generation length |
 | `trainer.loss_type` | `str` | `"m2po"` | Policy optimization loss: `"ppo"`, `"m2po"`, or `"grpo"` |
-| `trainer.clip_eps` | `float` | `0.2` | PPO clipping parameter $\epsilon$ |
-| `trainer.m2_threshold` | `float` | `2.0` | M2PO second-moment trust-region constraint $\gamma$ |
+| `trainer.clip_eps` | `float` | `0.2` | PPO clipping parameter ε (epsilon) |
+| `trainer.m2_threshold` | `float` | `2.0` | M2PO second-moment trust-region constraint γ (gamma) |
 | `trainer.learning_rate` | `float` | `1.0e-5` | AdamW learning rate |
 
 ---
@@ -625,7 +654,7 @@ Sample configuration file from `configs/phase2_async.yaml`:
 **A:** `VLLMEngineWrapper` automatically falls back to `HFEngine` (which runs autoregressive inference using native PyTorch/Transformers on CUDA or CPU) or `StubEngine` (for testing).
 
 **Q: How does M2PO prevent training collapse with stale data?**  
-**A:** Stale data produces outlier importance ratios $r_t(\theta) \gg 1$. M2PO tracks the second moment $\mathbb{E}[r_t(\theta)^2]$ across tokens and masks out elements exceeding $m_{2\_threshold}$, bounding gradient variance.
+**A:** Stale data produces outlier importance ratios $r_t(\theta) \gg 1$. M2PO tracks the second moment $\mathbb{E}[r_t(\theta)^2]$ across tokens and masks out elements exceeding the `m2_threshold`, bounding gradient variance.
 
 ---
 
