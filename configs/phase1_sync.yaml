@@ -1,0 +1,27 @@
+# Phase‑1 synchronous baseline configuration
+
+# Minimal settings to run a single‑node PPO baseline with colocated rollout & trainer.
+# Adjust GPU ids, model path, and data paths as needed.
+
+model:
+  name: "Qwen2.5-0.5B"
+  path: "${MODEL_PATH}"  # set via env var or replace here
+
+training:
+  epochs: 3
+  batch_size: 64
+  learning_rate: 1e-5
+  optimizer: "adamw"
+  loss: "ppo"
+  clip_eps: 0.2
+
+rollout:
+  backend: "vllm"  # or "sglang"
+  max_new_tokens: 256
+  temperature: 0.7
+  top_p: 0.95
+
+replay_buffer:
+  max_size: 10000
+
+# No disaggregation; trainer and rollout share the same GPUs.
