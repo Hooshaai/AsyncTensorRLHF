@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+.DS_Store
+.ipynb_checkpoints/
+log/
+*.log
