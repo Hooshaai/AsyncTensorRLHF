@@ -15,10 +15,15 @@ import os
 import pathlib
 import sys
 import time
-import torch
+
+# Clean up deprecated HF transfer environment variable
+os.environ.pop("HF_HUB_ENABLE_HF_TRANSFER", None)
+os.environ["HF_XET_HIGH_PERFORMANCE"] = "1"
 
 # Ensure project root is in sys.path
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+
+import torch
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import LoraConfig, get_peft_model, TaskType
@@ -58,10 +63,12 @@ def format_prompt(tokenizer, question: str) -> torch.Tensor:
 async def generate_response(model, tokenizer, prompt_tensor, device, max_new_tokens=24):
     prompt_tensor = prompt_tensor.to(device)
     input_len = prompt_tensor.shape[1]
+    attention_mask = torch.ones_like(prompt_tensor, device=device)
 
     with torch.no_grad():
         output = model.generate(
             prompt_tensor,
+            attention_mask=attention_mask,
             max_new_tokens=max_new_tokens,
             do_sample=True,
             temperature=0.7,
@@ -104,7 +111,7 @@ def main():
 
     base_model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        torch_dtype=dtype,
+        dtype=dtype,
         device_map=device if device == "cuda" else None,
     )
     if device == "cpu":
@@ -272,7 +279,7 @@ Fine-tuned version of **Qwen/Qwen2.5-0.5B-Instruct** trained using **[AsyncTenso
 
 ## Training Metrics & Highlights
 - **In-VRAM Zero-Copy Reward Computation**: Verified on GPU without CPU string SerDes overhead.
-- **Off-Policy Stability**: M2PO bounded staleness constraint ($\gamma = 2.0$) applied across asynchronous rollout iterations.
+- **Off-Policy Stability**: M2PO bounded staleness constraint (\\gamma = 2.0) applied across asynchronous rollout iterations.
 - **Initial Loss**: {losses[0] if losses else 0.0:.4f}
 - **Final Loss**: {losses[-1] if losses else 0.0:.4f}
 
