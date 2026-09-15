@@ -1,3 +1,21 @@
+---
+language:
+- en
+license: apache-2.0
+tags:
+- rlhf
+- reinforcement-learning
+- ppo
+- grpo
+- m2po
+- vllm
+- async
+- pytorch
+- cuda
+- tensor-native
+pipeline_tag: reinforcement-learning
+---
+
 # AsyncTensorRLHF
 
 <div align="center">
