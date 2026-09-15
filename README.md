@@ -25,6 +25,7 @@ pipeline_tag: reinforcement-learning
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
 [![Tests Passing](https://img.shields.io/badge/tests-41%2F41%20passed-brightgreen.svg)](tests/)
 [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97-Hugging%20Face-yellow)](https://huggingface.co/tahamajs/AsyncTensorRLHF)
+[![Hugging Face Space](https://img.shields.io/badge/%F0%9F%A4%97%20Space-Hooshaai%2FAsyncTensorRLHF-blue)](https://huggingface.co/spaces/Hooshaai/AsyncTensorRLHF)
 [![GitHub Repository](https://img.shields.io/badge/GitHub-AsyncTensorRLHF-181717.svg?logo=github)](https://github.com/Hooshaai/AsyncTensorRLHF)
 
 **High-Throughput Asynchronous Reinforcement Learning from Human Feedback (RLHF) with In-VRAM Tensor-Native Rewards & Second-Moment Off-Policy Control (M2PO / GRPO)**
@@ -490,6 +491,32 @@ Final Allocated VRAM: 17.00 MB
 ALL VERIFICATIONS AND BENCHMARKS COMPLETED SUCCESSFULLY (EXIT 0)
 ============================================================
 ```
+
+#### Detailed Hardware Benchmark Profiles:
+
+##### A. Policy Loss & Backpropagation Throughput ($B=64, L=256$)
+| Algorithm | Forward + Backward Latency | Effective Throughput | Status |
+|---|:---:|:---:|:---:|
+| **GRPO ($G=4$)** | **2.03 ms** | **8,058,669 tokens / sec** | **PASSED** |
+| **PPO (Standard Clipped)** | **2.42 ms** | **6,763,177 tokens / sec** | **PASSED** |
+| **M2PO (Second-Moment Trust Region)** | **5.98 ms** | **2,739,289 tokens / sec** | **PASSED** |
+
+##### B. High-Throughput Replay Buffer Concurrency
+| Operation | Dataset Workload | Throughput | Mean Latency |
+|---|---|---|---|
+| **Push (`BoundedReplayBuffer`)** | 20,000 experience items | **312,283 ops / sec** | 0.0032 ms / push |
+| **Sample Batch (`batch_size=64`)** | 20,000 experience items | **411,691 items / sec** | 0.0024 ms / item |
+
+##### C. Asynchronous Staleness ($\tau$) vs. Gradient Variance Reduction
+| Policy Staleness ($\tau$) | PPO Gradient Norm | M2PO Gradient Norm | Variance Reduction ($\%$) |
+|:---:|:---:|:---:|:---:|
+| $\tau = 0$ (On-policy synchronous) | 0.0218 | 0.0218 | **0.0%** |
+| $\tau = 1$ | 0.0212 | 0.0212 | **0.0%** |
+| $\tau = 2$ | 0.0202 | 0.0201 | **0.3%** |
+| $\tau = 3$ | 0.0221 | 0.0204 | **7.7%** |
+| $\tau = 5$ | 0.0265 | 0.0198 | **25.6%** |
+| $\tau = 8$ (Extreme asynchronous drift) | 0.0502 | 0.0190 | **62.1%** |
+
 
 ---
 

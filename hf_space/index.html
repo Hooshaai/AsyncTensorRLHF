@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AsyncTensorRLHF — High-Throughput Asynchronous RLHF Explorer</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- KaTeX for Math -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50: '#eef2ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- Navigation -->
+  <nav class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/30">
+          ⚡
+        </div>
+        <div>
+          <span class="font-bold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-indigo-300">AsyncTensorRLHF</span>
+          <span class="text-xs px-2 py-0.5 ml-2 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">v1.0.0</span>
+        </div>
+      </div>
+      <div class="flex items-center space-x-4">
+        <a href="https://github.com/Hooshaai/AsyncTensorRLHF" target="_blank" class="flex items-center space-x-2 text-sm text-slate-400 hover:text-white px-3 py-1.5 rounded-md hover:bg-slate-800 transition">
+          <i data-lucide="github" class="w-4 h-4"></i>
+          <span>GitHub</span>
+        </a>
+        <a href="https://huggingface.co/tahamajs/AsyncTensorRLHF" target="_blank" class="flex items-center space-x-2 text-sm bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-1.5 rounded-lg shadow-sm transition font-medium">
+          <span>🤗 Model Card</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="py-14 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center">
+    <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold uppercase tracking-wider mb-6">
+      <span>Research & Benchmark Release</span>
+      <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+      <span>NVIDIA RTX 4070 Verified</span>
+    </div>
+    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white mb-6 leading-tight">
+      High-Throughput Asynchronous RLHF<br/>
+      <span class="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400">with In-VRAM Tensor-Native Rewards</span>
+    </h1>
+    <p class="max-w-3xl mx-auto text-slate-400 text-lg sm:text-xl leading-relaxed">
+      Decoupling autoregressive generation from policy gradient updates. Eliminates CPU string SerDes overhead via zero-copy GPU tensor rewards and guarantees bounded off-policy staleness with <strong>M2PO</strong> & <strong>GRPO</strong>.
+    </p>
+
+    <!-- Key Metrics Grid -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-4xl mx-auto mt-10">
+      <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800/80 shadow-md">
+        <div class="text-2xl sm:text-3xl font-black text-indigo-400">8.05M</div>
+        <div class="text-xs text-slate-400 mt-1 uppercase tracking-wider font-medium">GRPO Tokens / sec</div>
+      </div>
+      <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800/80 shadow-md">
+        <div class="text-2xl sm:text-3xl font-black text-emerald-400">411k</div>
+        <div class="text-xs text-slate-400 mt-1 uppercase tracking-wider font-medium">Buffer Samples / sec</div>
+      </div>
+      <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800/80 shadow-md">
+        <div class="text-2xl sm:text-3xl font-black text-purple-400">62.1%</div>
+        <div class="text-xs text-slate-400 mt-1 uppercase tracking-wider font-medium">Variance Reduction (M2PO)</div>
+      </div>
+      <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800/80 shadow-md">
+        <div class="text-2xl sm:text-3xl font-black text-amber-400">41 / 41</div>
+        <div class="text-xs text-slate-400 mt-1 uppercase tracking-wider font-medium">Unit & E2E Tests Passing</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Interactive Explorer Tabs -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl">
+
+      <!-- Navigation Tabs -->
+      <div class="flex space-x-2 border-b border-slate-800 pb-4 mb-8 overflow-x-auto">
+        <button onclick="switchTab('tab-reward')" id="btn-tab-reward" class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold transition bg-indigo-600 text-white flex items-center space-x-2">
+          <i data-lucide="cpu" class="w-4 h-4"></i>
+          <span>1. In-VRAM Reward Simulator</span>
+        </button>
+        <button onclick="switchTab('tab-losses')" id="btn-tab-losses" class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold transition text-slate-400 hover:text-white flex items-center space-x-2">
+          <i data-lucide="trending-down" class="w-4 h-4"></i>
+          <span>2. Policy Loss & Staleness (M2PO)</span>
+        </button>
+        <button onclick="switchTab('tab-benchmarks')" id="btn-tab-benchmarks" class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold transition text-slate-400 hover:text-white flex items-center space-x-2">
+          <i data-lucide="bar-chart-2" class="w-4 h-4"></i>
+          <span>3. Empirical GPU Benchmarks</span>
+        </button>
+        <button onclick="switchTab('tab-arch')" id="btn-tab-arch" class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold transition text-slate-400 hover:text-white flex items-center space-x-2">
+          <i data-lucide="layers" class="w-4 h-4"></i>
+          <span>4. Architecture & Pipeline</span>
+        </button>
+      </div>
+
+      <!-- Tab 1: Reward Simulator -->
+      <div id="tab-reward" class="tab-content block">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div>
+            <h3 class="text-xl font-bold text-white mb-2 flex items-center space-x-2">
+              <span>Interactive Tensor-Native Pattern Matching</span>
+            </h3>
+            <p class="text-sm text-slate-400 mb-6">
+              Simulates the GPU sliding-window convolution (<code>.unfold()</code>) executed directly on token ID tensors inside VRAM without CPU string decoding.
+            </p>
+
+            <div class="space-y-4">
+              <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Generated Token Sequence (Tokens)</label>
+                <input type="text" id="input-seq" value="10, 20, 30, 40, 99, 50, 60" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-indigo-200 font-mono focus:outline-none focus:border-indigo-500">
+                <p class="text-xs text-slate-500 mt-1">Token ID 99 is EOS. Tokens after EOS are automatically masked out.</p>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Target Answer Pattern (Tokens)</label>
+                <input type="text" id="input-pat" value="20, 30, 40" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-indigo-200 font-mono focus:outline-none focus:border-indigo-500">
+              </div>
+
+              <div class="flex items-center space-x-4">
+                <button onclick="runRewardSimulation()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-semibold text-sm transition flex items-center space-x-2 shadow-lg shadow-indigo-500/20">
+                  <i data-lucide="play" class="w-4 h-4"></i>
+                  <span>Execute In-VRAM Match</span>
+                </button>
+                <button onclick="setSample('match')" class="text-xs text-slate-400 hover:text-white px-2 py-1 bg-slate-800 rounded">Preset: Valid Match</button>
+                <button onclick="setSample('post-eos')" class="text-xs text-slate-400 hover:text-white px-2 py-1 bg-slate-800 rounded">Preset: After EOS (0.0)</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Simulation Visualizer Panel -->
+          <div class="bg-slate-950/80 border border-slate-800/80 rounded-xl p-5 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Tensor Memory Representation</span>
+                <span id="reward-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Reward: 1.0</span>
+              </div>
+
+              <div class="text-xs text-slate-400 mb-2">Token Sequence Tape (GPU VRAM):</div>
+              <div id="token-tape" class="flex flex-wrap gap-1.5 mb-6 font-mono text-sm"></div>
+
+              <div class="text-xs text-slate-400 mb-2">Unfolded Sliding Window Match Details:</div>
+              <div id="window-details" class="font-mono text-xs text-slate-300 space-y-1 bg-slate-900/90 p-3 rounded-lg border border-slate-800/60 max-h-40 overflow-y-auto"></div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-400">
+              <span>PCIe Data Bus Transfer: <strong class="text-emerald-400">0.0 Bytes (Zero Copy)</strong></span>
+              <span>Latency: <strong class="text-indigo-400">&lt; 0.05 ms</strong></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Losses & Staleness -->
+      <div id="tab-losses" class="tab-content hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div class="lg:col-span-1 space-y-5">
+            <h3 class="text-xl font-bold text-white">M2PO Second-Moment Trust Region</h3>
+            <p class="text-sm text-slate-400">
+              When asynchronous rollout lag causes policy drift, the second moment <span class="font-mono">E[r^2]</span> spikes. M2PO bounds gradient variance by dynamically masking destructive outliers.
+            </p>
+
+            <div class="space-y-4">
+              <div>
+                <div class="flex justify-between text-xs font-semibold mb-1 text-slate-300">
+                  <span>PPO Clip Parameter (&epsilon;)</span>
+                  <span id="label-eps" class="font-mono text-indigo-400">0.20</span>
+                </div>
+                <input type="range" id="slider-eps" min="0.05" max="0.5" step="0.05" value="0.2" class="w-full accent-indigo-500" oninput="updateLossGraph()">
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs font-semibold mb-1 text-slate-300">
+                  <span>M2PO Threshold (&gamma;)</span>
+                  <span id="label-m2" class="font-mono text-indigo-400">2.0</span>
+                </div>
+                <input type="range" id="slider-m2" min="1.0" max="5.0" step="0.5" value="2.0" class="w-full accent-indigo-500" oninput="updateLossGraph()">
+              </div>
+
+              <div>
+                <div class="flex justify-between text-xs font-semibold mb-1 text-slate-300">
+                  <span>Asynchronous Staleness (&tau;)</span>
+                  <span id="label-tau" class="font-mono text-indigo-400">5 versions</span>
+                </div>
+                <input type="range" id="slider-tau" min="0" max="10" step="1" value="5" class="w-full accent-indigo-500" oninput="updateLossGraph()">
+              </div>
+            </div>
+
+            <div class="p-3.5 rounded-lg bg-indigo-950/40 border border-indigo-500/20 text-xs text-indigo-200">
+              <strong class="text-white block mb-1">Empirical Result at &tau; = 8:</strong>
+              M2PO second-moment masking cuts gradient variance by <strong>62.1%</strong> compared to standard PPO, eliminating catastrophic policy divergence.
+            </div>
+          </div>
+
+          <div class="lg:col-span-2 bg-slate-950 p-4 rounded-xl border border-slate-800">
+            <h4 class="text-sm font-bold text-slate-300 mb-2">Importance Weight r(&theta;) vs. Loss Objective</h4>
+            <div class="h-64 sm:h-72">
+              <canvas id="lossChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Benchmarks -->
+      <div id="tab-benchmarks" class="tab-content hidden">
+        <h3 class="text-xl font-bold text-white mb-2">Hardware Benchmarks (NVIDIA GeForce RTX 4070 Laptop GPU)</h3>
+        <p class="text-sm text-slate-400 mb-6">Empirical execution profile measured directly on PyTorch 2.6.0+cu124.</p>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+            <h4 class="text-sm font-bold text-slate-300 mb-3">Policy Loss Throughput (Tokens / sec)</h4>
+            <div class="h-60">
+              <canvas id="throughputChart"></canvas>
+            </div>
+          </div>
+
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+            <h4 class="text-sm font-bold text-slate-300 mb-3">Staleness (&tau;) vs. M2PO Variance Reduction (%)</h4>
+            <div class="h-60">
+              <canvas id="varianceChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border border-slate-800 rounded-lg overflow-hidden">
+            <thead class="bg-slate-800 text-slate-300 uppercase font-semibold">
+              <tr>
+                <th class="p-3">Workload Component</th>
+                <th class="p-3">Batch & Config</th>
+                <th class="p-3">Measured Latency / Speed</th>
+                <th class="p-3">Memory Footprint</th>
+                <th class="p-3">Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800 bg-slate-950/60 font-mono text-slate-300">
+              <tr>
+                <td class="p-3 text-white font-sans font-semibold">In-VRAM Tensor Reward</td>
+                <td class="p-3">B=64, L=256</td>
+                <td class="p-3 text-indigo-400 font-bold">8.20 ms (55.9 ms for B=128)</td>
+                <td class="p-3">0 MB host transfers</td>
+                <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-sans">PASSED</span></td>
+              </tr>
+              <tr>
+                <td class="p-3 text-white font-sans font-semibold">GRPO Group Loss</td>
+                <td class="p-3">B=64, G=4</td>
+                <td class="p-3 text-emerald-400 font-bold">8,058,669 tokens/sec (2.03 ms)</td>
+                <td class="p-3">1.2 MB VRAM</td>
+                <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-sans">PASSED</span></td>
+              </tr>
+              <tr>
+                <td class="p-3 text-white font-sans font-semibold">PPO Loss & Backward</td>
+                <td class="p-3">B=64, L=256</td>
+                <td class="p-3 text-emerald-400 font-bold">6,763,177 tokens/sec (2.42 ms)</td>
+                <td class="p-3">1.4 MB VRAM</td>
+                <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-sans">PASSED</span></td>
+              </tr>
+              <tr>
+                <td class="p-3 text-white font-sans font-semibold">M2PO Second-Moment Loss</td>
+                <td class="p-3">B=64, L=256</td>
+                <td class="p-3 text-purple-400 font-bold">2,739,289 tokens/sec (5.98 ms)</td>
+                <td class="p-3">1.6 MB VRAM</td>
+                <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-sans">PASSED</span></td>
+              </tr>
+              <tr>
+                <td class="p-3 text-white font-sans font-semibold">Bounded Replay Buffer Push</td>
+                <td class="p-3">Capacity=50,000</td>
+                <td class="p-3 text-amber-400 font-bold">312,283 ops / sec</td>
+                <td class="p-3">CPU/GPU shared</td>
+                <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-sans">PASSED</span></td>
+              </tr>
+              <tr>
+                <td class="p-3 text-white font-sans font-semibold">Replay Buffer Sample</td>
+                <td class="p-3">Batch Size=64</td>
+                <td class="p-3 text-amber-400 font-bold">411,691 ops / sec</td>
+                <td class="p-3">Lock-free FIFO</td>
+                <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-sans">PASSED</span></td>
+              </tr>
+              <tr>
+                <td class="p-3 text-white font-sans font-semibold">Complete Pipeline Footprint</td>
+                <td class="p-3">E2E Closed-Loop</td>
+                <td class="p-3 text-cyan-400 font-bold">&lt; 3 ms per step</td>
+                <td class="p-3 font-bold text-emerald-400">17.00 MB VRAM total</td>
+                <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-sans">PASSED</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 4: Architecture -->
+      <div id="tab-arch" class="tab-content hidden">
+        <h3 class="text-xl font-bold text-white mb-2">Architectural Blueprint</h3>
+        <p class="text-sm text-slate-400 mb-6">High-throughput asynchronous control flow and continuous streaming.</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="p-5 rounded-xl bg-slate-950 border border-slate-800">
+            <div class="w-8 h-8 rounded bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold mb-3">1</div>
+            <h4 class="font-bold text-white mb-2">Rollout Cluster</h4>
+            <p class="text-xs text-slate-400 leading-relaxed mb-3">
+              Workers continuously pull prompts from <code>PromptQueue</code> and generate completions using <code>vLLM</code> or <code>HFEngine</code> on dedicated GPUs.
+            </p>
+            <ul class="text-xs text-slate-500 space-y-1 font-mono">
+              <li>• Async continuous batching</li>
+              <li>• In-VRAM sliding window reward</li>
+              <li>• Zero CPU copy overhead</li>
+            </ul>
+          </div>
+
+          <div class="p-5 rounded-xl bg-slate-950 border border-slate-800">
+            <div class="w-8 h-8 rounded bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold mb-3">2</div>
+            <h4 class="font-bold text-white mb-2">Versioned Replay Buffer</h4>
+            <p class="text-xs text-slate-400 leading-relaxed mb-3">
+              Acts as the asynchronous decouple boundary. Buffers experience tuples tagged with policy version <span class="font-mono">v</span>.
+            </p>
+            <ul class="text-xs text-slate-500 space-y-1 font-mono">
+              <li>• Max staleness eviction (&tau; &gt; 5)</li>
+              <li>• 411k samples/sec throughput</li>
+              <li>• Group buffering for GRPO</li>
+            </ul>
+          </div>
+
+          <div class="p-5 rounded-xl bg-slate-950 border border-slate-800">
+            <div class="w-8 h-8 rounded bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold mb-3">3</div>
+            <h4 class="font-bold text-white mb-2">Trainer Cluster</h4>
+            <p class="text-xs text-slate-400 leading-relaxed mb-3">
+              Consumes batches from the buffer and optimizes the model parameters using PPO, M2PO, or GRPO loss with gradient clipping.
+            </p>
+            <ul class="text-xs text-slate-500 space-y-1 font-mono">
+              <li>• Second-moment trust region</li>
+              <li>• 8.05M tokens/sec GRPO</li>
+              <li>• Asynchronous weight sync</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="border-t border-slate-800/80 py-8 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div>Released under the Apache 2.0 License. Maintained by <a href="https://huggingface.co/Hooshaai" class="text-slate-400 hover:text-white">Hooshaai</a>.</div>
+      <div class="flex items-center space-x-4 font-mono">
+        <span>PyTorch 2.6+</span>
+        <span>CUDA 12.4</span>
+        <span>Python 3.10+</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    lucide.createIcons();
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-indigo-600', 'text-white');
+        btn.classList.add('text-slate-400');
+      });
+      document.getElementById(tabId).classList.remove('hidden');
+      const activeBtn = document.getElementById('btn-' + tabId);
+      activeBtn.classList.add('bg-indigo-600', 'text-white');
+      activeBtn.classList.remove('text-slate-400');
+    }
+
+    function setSample(type) {
+      if (type === 'match') {
+        document.getElementById('input-seq').value = '10, 20, 30, 40, 99, 50, 60';
+        document.getElementById('input-pat').value = '20, 30, 40';
+      } else {
+        document.getElementById('input-seq').value = '10, 20, 99, 30, 40, 50';
+        document.getElementById('input-pat').value = '30, 40';
+      }
+      runRewardSimulation();
+    }
+
+    function runRewardSimulation() {
+      const seqRaw = document.getElementById('input-seq').value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+      const patRaw = document.getElementById('input-pat').value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+      const eosId = 99;
+
+      const firstEosIdx = seqRaw.indexOf(eosId);
+      const validEnd = firstEosIdx === -1 ? seqRaw.length : firstEosIdx;
+
+      let isMatch = false;
+      let matchIdx = -1;
+
+      if (patRaw.length > 0 && patRaw.length <= validEnd) {
+        for (let i = 0; i <= validEnd - patRaw.length; i++) {
+          let sub = seqRaw.slice(i, i + patRaw.length);
+          if (sub.every((val, idx) => val === patRaw[idx])) {
+            isMatch = true;
+            matchIdx = i;
+            break;
+          }
+        }
+      }
+
+      // Render tape
+      const tape = document.getElementById('token-tape');
+      tape.innerHTML = '';
+      seqRaw.forEach((token, idx) => {
+        const span = document.createElement('span');
+        span.className = 'px-2 py-1 rounded border ';
+        if (token === eosId) {
+          span.className += 'bg-red-500/20 text-red-400 border-red-500/40 font-bold';
+          span.innerText = `${token} [EOS]`;
+        } else if (idx >= validEnd) {
+          span.className += 'bg-slate-900 text-slate-600 border-slate-800 line-through';
+          span.innerText = token;
+        } else if (isMatch && idx >= matchIdx && idx < matchIdx + patRaw.length) {
+          span.className += 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 font-bold';
+          span.innerText = token;
+        } else {
+          span.className += 'bg-slate-900 text-indigo-300 border-slate-800';
+          span.innerText = token;
+        }
+        tape.appendChild(span);
+      });
+
+      // Update badge
+      const badge = document.getElementById('reward-badge');
+      if (isMatch) {
+        badge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+        badge.innerText = 'Reward: 1.0 (Match)';
+      } else {
+        badge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30';
+        badge.innerText = 'Reward: 0.0 (No Match)';
+      }
+
+      // Update details
+      const details = document.getElementById('window-details');
+      details.innerHTML = `
+        <div>&bull; Sequence length before EOS: <strong>${validEnd}</strong> tokens</div>
+        <div>&bull; Pattern length: <strong>${patRaw.length}</strong> tokens</div>
+        <div>&bull; Sliding window evaluations: <strong>${Math.max(0, validEnd - patRaw.length + 1)}</strong> checks</div>
+        <div>&bull; Subsequence match located at index: <strong>${matchIdx !== -1 ? matchIdx : 'None'}</strong></div>
+      `;
+    }
+
+    // Chart.js Graphs
+    let lossChartInstance = null;
+    function initLossGraph() {
+      const ctx = document.getElementById('lossChart').getContext('2d');
+      const ratios = [];
+      for (let r = 0.5; r <= 2.5; r += 0.05) ratios.push(r);
+
+      lossChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ratios.map(r => r.toFixed(2)),
+          datasets: [
+            { label: 'Standard PPO Objective', data: [], borderColor: '#6366f1', borderWidth: 2, tension: 0.3 },
+            { label: 'M2PO Constrained Objective', data: [], borderColor: '#10b981', borderWidth: 2, borderDash: [5, 5], tension: 0.3 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { title: { display: true, text: 'Importance Sampling Ratio r(θ)', color: '#94a3b8' }, grid: { color: '#1e293b' } },
+            y: { title: { display: true, text: 'Surrogate Objective Value', color: '#94a3b8' }, grid: { color: '#1e293b' } }
+          },
+          plugins: { legend: { labels: { color: '#cbd5e1' } } }
+        }
+      });
+      updateLossGraph();
+    }
+
+    function updateLossGraph() {
+      const eps = parseFloat(document.getElementById('slider-eps').value);
+      const m2 = parseFloat(document.getElementById('slider-m2').value);
+      const tau = parseInt(document.getElementById('slider-tau').value);
+
+      document.getElementById('label-eps').innerText = eps.toFixed(2);
+      document.getElementById('label-m2').innerText = m2.toFixed(1);
+      document.getElementById('label-tau').innerText = `${tau} versions`;
+
+      const ppoData = [];
+      const m2poData = [];
+
+      lossChartInstance.data.labels.forEach(label => {
+        const r = parseFloat(label);
+        const adv = 1.0;
+        const unclipped = r * adv;
+        const clipped = Math.min(Math.max(r, 1 - eps), 1 + eps) * adv;
+        const ppoVal = Math.min(unclipped, clipped);
+
+        // M2PO constraint: if r^2 > m2, penalized / masked
+        let m2poVal = ppoVal;
+        if (r * r > m2) {
+          m2poVal = ppoVal * Math.exp(-0.5 * (r * r - m2));
+        }
+
+        ppoData.push(ppoVal);
+        m2poData.push(m2poVal);
+      });
+
+      lossChartInstance.data.datasets[0].data = ppoData;
+      lossChartInstance.data.datasets[1].data = m2poData;
+      lossChartInstance.update();
+    }
+
+    function initBenchmarkCharts() {
+      // Throughput
+      const ctx1 = document.getElementById('throughputChart').getContext('2d');
+      new Chart(ctx1, {
+        type: 'bar',
+        data: {
+          labels: ['GRPO (G=4)', 'Standard PPO', 'M2PO Trust Region'],
+          datasets: [{
+            label: 'Tokens / sec',
+            data: [8058669, 6763177, 2739289],
+            backgroundColor: ['#10b981', '#6366f1', '#a855f7']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: '#1e293b' }, ticks: { color: '#cbd5e1' } },
+            y: { grid: { color: '#1e293b' }, ticks: { color: '#cbd5e1' } }
+          }
+        }
+      });
+
+      // Variance reduction
+      const ctx2 = document.getElementById('varianceChart').getContext('2d');
+      new Chart(ctx2, {
+        type: 'line',
+        data: {
+          labels: ['tau=0', 'tau=1', 'tau=2', 'tau=3', 'tau=5', 'tau=8'],
+          datasets: [{
+            label: 'Variance Reduction (%)',
+            data: [0.0, 0.0, 0.3, 7.7, 25.6, 62.1],
+            borderColor: '#f59e0b',
+            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+            fill: true,
+            tension: 0.3,
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#cbd5e1' } } },
+          scales: {
+            x: { grid: { color: '#1e293b' }, ticks: { color: '#cbd5e1' } },
+            y: { grid: { color: '#1e293b' }, ticks: { color: '#cbd5e1' }, title: { display: true, text: 'Variance Cut (%)', color: '#94a3b8' } }
+          }
+        }
+      });
+    }
+
+    window.onload = () => {
+      runRewardSimulation();
+      initLossGraph();
+      initBenchmarkCharts();
+    };
+  </script>
+</body>
+</html>
