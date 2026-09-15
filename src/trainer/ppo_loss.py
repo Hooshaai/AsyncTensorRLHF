@@ -47,3 +47,24 @@ def compute_ppo_loss(
         loss = -torch.min(ratio * advantages, clipped_ratio * advantages).mean()
 
     return loss
+
+
+def compute_m2po_loss(
+    policy_log_probs: torch.Tensor,
+    old_log_probs: torch.Tensor,
+    advantages: torch.Tensor,
+    clip_eps: float = 0.2,
+    m2_threshold: float = 2.0,
+) -> torch.Tensor:
+    """Convenience wrapper: compute_ppo_loss with use_m2po=True.
+
+    Returns a scalar torch.Tensor.
+    """
+    return compute_ppo_loss(
+        policy_log_probs,
+        old_log_probs,
+        advantages,
+        clip_eps=clip_eps,
+        use_m2po=True,
+        m2_threshold=m2_threshold,
+    )
