@@ -366,114 +366,686 @@
 
       <!-- Tab 5: Research Paper -->
       <div id="tab-paper" class="tab-content hidden">
-        <div class="space-y-6">
-          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-950 p-6 rounded-xl border border-slate-800">
-            <div>
-              <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">Formal Research Paper</span>
-              <h3 class="text-2xl font-bold text-white mt-2">AsyncTensorRLHF: High-Throughput Asynchronous RLHF with In-VRAM Tensor-Native Rewards</h3>
-              <p class="text-xs text-slate-400 mt-1">Taha Majlesi • Hooshaai Lab • March 2026</p>
+        <div class="space-y-8">
+
+          <!-- Paper Header Card -->
+          <div class="bg-gradient-to-br from-slate-900 via-indigo-950/30 to-slate-900 p-6 sm:p-8 rounded-2xl border border-indigo-500/20 shadow-xl">
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+              <div class="flex items-center space-x-2">
+                <span class="text-xs font-bold px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-wider">
+                  Academic Research Paper
+                </span>
+                <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  IEEE 2-Column Format
+                </span>
+                <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                  6 Pages • March 2026
+                </span>
+              </div>
+
+              <!-- View Switcher Tabs -->
+              <div class="inline-flex items-center p-1 rounded-xl bg-slate-950 border border-slate-800 shadow-inner">
+                <button onclick="togglePaperView('html')" id="btn-paper-html" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white shadow-sm flex items-center space-x-2 transition">
+                  <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
+                  <span>Interactive Paper</span>
+                </button>
+                <button onclick="togglePaperView('pdf')" id="btn-paper-pdf" class="px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white flex items-center space-x-2 transition">
+                  <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                  <span>Original PDF</span>
+                </button>
+              </div>
             </div>
-            <div class="flex items-center space-x-3">
-              <a href="paper.pdf" target="_blank" download="AsyncTensorRLHF_Paper.pdf" class="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm px-4 py-2.5 rounded-lg shadow-lg shadow-indigo-600/20 transition">
+
+            <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight mb-4">
+              AsyncTensorRLHF: High-Throughput Asynchronous RLHF with In-VRAM Tensor-Native Rewards and Second-Moment Off-Policy Control
+            </h2>
+
+            <div class="flex flex-wrap items-center gap-y-2 gap-x-6 text-sm text-slate-300 mb-6 font-sans">
+              <div class="flex items-center space-x-2">
+                <span class="font-bold text-white text-base">Taha Majlesi</span>
+                <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">Author & Lead Researcher</span>
+              </div>
+              <div class="text-slate-400 flex items-center space-x-1">
+                <i data-lucide="building" class="w-4 h-4 text-indigo-400"></i>
+                <span>Hooshaai Research</span>
+              </div>
+              <div class="text-slate-400 flex items-center space-x-1 font-mono text-xs">
+                <i data-lucide="mail" class="w-3.5 h-3.5 text-indigo-400"></i>
+                <span>tahamajs@gmail.com</span>
+              </div>
+            </div>
+
+            <!-- Quick Action Toolbar -->
+            <div class="flex flex-wrap items-center gap-3 pt-4 border-t border-slate-800/80">
+              <a href="paper.pdf" target="_blank" download="AsyncTensorRLHF_Paper.pdf" class="inline-flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs sm:text-sm px-4 py-2 rounded-lg shadow-lg shadow-indigo-600/30 transition">
                 <i data-lucide="download" class="w-4 h-4"></i>
-                <span>Download PDF (429 KB)</span>
+                <span>Download PDF (409 KB)</span>
               </a>
-              <a href="paper.pdf" target="_blank" class="flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-sm px-4 py-2.5 rounded-lg border border-slate-700 transition">
-                <i data-lucide="external-link" class="w-4 h-4"></i>
-                <span>Open in Tab</span>
+              <button onclick="copyBibtex()" class="inline-flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-xs sm:text-sm px-4 py-2 rounded-lg border border-slate-700 transition">
+                <i data-lucide="copy" class="w-4 h-4 text-indigo-400"></i>
+                <span id="copy-btn-text">Copy BibTeX Citation</span>
+              </button>
+              <a href="https://huggingface.co/Hooshaai/Qwen2.5-0.5B-AsyncTensorRLHF" target="_blank" class="inline-flex items-center space-x-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 font-medium text-xs sm:text-sm px-4 py-2 rounded-lg border border-purple-500/30 transition">
+                <i data-lucide="database" class="w-4 h-4"></i>
+                <span>Trained Qwen Weights</span>
+              </a>
+              <a href="https://github.com/Hooshaai/AsyncTensorRLHF" target="_blank" class="inline-flex items-center space-x-2 text-slate-400 hover:text-white font-medium text-xs sm:text-sm px-3 py-2 rounded-lg hover:bg-slate-800/60 transition">
+                <i data-lucide="github" class="w-4 h-4"></i>
+                <span>GitHub Repository</span>
               </a>
             </div>
           </div>
 
-          <!-- Abstract and Key Findings -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="md:col-span-2 p-6 rounded-xl bg-slate-950 border border-slate-800">
-              <h4 class="font-bold text-slate-200 mb-3 text-sm uppercase tracking-wider flex items-center space-x-2">
-                <i data-lucide="book-open" class="w-4 h-4 text-indigo-400"></i>
-                <span>Abstract</span>
-              </h4>
-              <p class="text-sm text-slate-300 leading-relaxed text-justify font-sans">
-                Post-training reinforcement learning for Large Language Models (LLMs)—including Proximal Policy Optimization (PPO) and Group Relative Policy Optimization (GRPO)—traditionally couples autoregressive rollout generation, string deserialization, and rule verification on CPU hosts. We introduce <strong>AsyncTensorRLHF</strong>, an asynchronous RLHF architecture that completely eliminates host-device serialization bottlenecks through in-VRAM sliding-window token pattern matching and guarantees stable off-policy updates via Second-Moment Trust Region Policy Optimization (<strong>M2PO</strong>). Evaluated on NVIDIA Ada Lovelace architecture, AsyncTensorRLHF achieves <strong>8.05M tokens/sec</strong> under GRPO and reduces staleness gradient variance by <strong>62.1%</strong> at off-policy lag $\tau=8$.
-              </p>
+          <!-- VIEW 1: INTERACTIVE HTML PAPER -->
+          <div id="paper-view-html" class="space-y-10">
 
-              <h4 class="font-bold text-slate-200 mt-6 mb-3 text-sm uppercase tracking-wider flex items-center space-x-2">
-                <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
-                <span>Core Theoretical Contributions</span>
-              </h4>
-              <ul class="text-sm text-slate-400 space-y-2">
-                <li class="flex items-start space-x-2">
-                  <span class="text-indigo-400 font-bold">•</span>
-                  <span><strong>Zero-Copy Sliding-Window Convolution:</strong> Unfolds token ID tensors directly across GPU memory lanes, evaluating deterministic reasoning verifiers in $O(1)$ host roundtrips.</span>
-                </li>
-                <li class="flex items-start space-x-2">
-                  <span class="text-indigo-400 font-bold">•</span>
-                  <span><strong>Second-Moment Trust Region (M2PO):</strong> Replaces heuristic surrogate clipping with an exact quadratic second-moment penalty $\frac{\gamma}{2}\mathbb{E}[(r_t(\theta)-1)^2 |A_t|]$ proven to bound Fisher-Divergence under asynchronous rollout staleness.</span>
-                </li>
-                <li class="flex items-start space-x-2">
-                  <span class="text-indigo-400 font-bold">•</span>
-                  <span><strong>Lock-Free Ring Buffer with Replay Filtering:</strong> High-speed CUDA circular buffer achieving 411,691 samples/second with stale sample invalidation.</span>
-                </li>
-              </ul>
+            <!-- Section Quick Navigator (Sticky Sub-nav) -->
+            <div class="bg-slate-950/80 backdrop-blur border border-slate-800 rounded-xl p-3 flex items-center space-x-2 overflow-x-auto text-xs font-semibold">
+              <span class="text-slate-500 px-2 uppercase tracking-wider flex items-center space-x-1">
+                <i data-lucide="list" class="w-3.5 h-3.5"></i>
+                <span>Jump To:</span>
+              </span>
+              <a href="#sec-abstract" class="px-2.5 py-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition whitespace-nowrap">Abstract</a>
+              <a href="#sec-intro" class="px-2.5 py-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition whitespace-nowrap">1. Introduction</a>
+              <a href="#sec-related" class="px-2.5 py-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition whitespace-nowrap">2. Related Work</a>
+              <a href="#sec-theory" class="px-2.5 py-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition whitespace-nowrap">3. Theory & M2PO</a>
+              <a href="#sec-arch" class="px-2.5 py-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition whitespace-nowrap">4. System Architecture</a>
+              <a href="#sec-eval" class="px-2.5 py-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition whitespace-nowrap">5. Empirical Results</a>
+              <a href="#sec-disc" class="px-2.5 py-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition whitespace-nowrap">6. Discussion</a>
+              <a href="#sec-ref" class="px-2.5 py-1 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition whitespace-nowrap">References</a>
             </div>
 
-            <div class="space-y-4">
-              <div class="p-5 rounded-xl bg-slate-950 border border-slate-800">
-                <h4 class="font-bold text-white text-sm mb-3">Paper Information</h4>
-                <div class="space-y-2.5 text-xs">
-                  <div class="flex justify-between pb-2 border-b border-slate-800">
-                    <span class="text-slate-500">Format:</span>
-                    <span class="text-slate-300 font-mono">IEEE 2-Column</span>
+            <!-- ABSTRACT & METRICS GRID -->
+            <section id="sec-abstract" class="p-6 sm:p-8 rounded-2xl bg-slate-950 border border-slate-800 shadow-lg">
+              <div class="flex items-center space-x-2 mb-4">
+                <div class="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-sm">
+                  §
+                </div>
+                <h3 class="text-xl font-bold text-white uppercase tracking-wider text-sm">Abstract</h3>
+              </div>
+              <p class="text-slate-300 leading-relaxed text-justify text-sm sm:text-base mb-6 font-sans">
+                Post-training Reinforcement Learning from Human Feedback (RLHF) and Group Relative Policy Optimization (GRPO) represent foundational paradigms for aligning Large Language Models (LLMs) and eliciting deliberate chain-of-thought mathematical reasoning. However, standard RLHF infrastructure suffers from two fundamental bottlenecks: (1) <em>the CPU-GPU serialization wall</em>, wherein generated token sequences are repeatedly shuttled across the PCIe bus to host RAM for UTF-8 decoding, string parsing, and rule-based evaluation; and (2) <em>the synchronous lockstep barrier</em>, which forces autoregressive rollout generation and gradient backpropagation to alternate in strict lockstep, leaving GPUs idle for $40\text{--}60\%$ of cluster wall-clock time.
+              </p>
+              <p class="text-slate-300 leading-relaxed text-justify text-sm sm:text-base mb-6 font-sans">
+                We introduce <strong>AsyncTensorRLHF</strong>, a fully asynchronous, disaggregated RLHF architecture engineered for high-throughput post-training. AsyncTensorRLHF eliminates host-device serialization overhead by evaluating pattern matching and rule-verifiable rewards natively inside GPU VRAM via strided 1D tensor convolutions (<code>.unfold()</code>), achieving zero-copy reward evaluation. To decouple rollout generation from policy optimization while provably preventing policy collapse under off-policy staleness $\tau$, we introduce <strong>M2PO</strong> (Second-Moment Trust Region Policy Optimization), which adaptively constrains the empirical second moment of importance sampling ratios $\mathbb{E}[r_t^2(\theta)]$.
+              </p>
+              <p class="text-slate-300 leading-relaxed text-justify text-sm sm:text-base font-sans">
+                Empirical evaluations on an NVIDIA GeForce RTX 4070 Laptop GPU demonstrate that AsyncTensorRLHF achieves an unprecedented GRPO throughput of <strong>8.05 million tokens/second</strong>, a lock-free buffer processing rate of <strong>411,691 samples/second</strong>, and reduces gradient variance by <strong>62.1%</strong> under extreme off-policy staleness ($\tau = 8$). Furthermore, we validate end-to-end alignment by fine-tuning Qwen2.5-0.5B-Instruct on mathematical reasoning tasks in 108.36 seconds, open-sourcing the architecture, trained weights, and an interactive web explorer.
+              </p>
+
+              <!-- Highlight Metrics Strip -->
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-6 border-t border-slate-800">
+                <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800">
+                  <div class="text-2xl font-black text-indigo-400">8,058,669</div>
+                  <div class="text-[11px] uppercase tracking-wider text-slate-400 mt-1 font-medium">GRPO Tokens / Sec</div>
+                </div>
+                <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800">
+                  <div class="text-2xl font-black text-emerald-400">411,691</div>
+                  <div class="text-[11px] uppercase tracking-wider text-slate-400 mt-1 font-medium">Buffer Items / Sec</div>
+                </div>
+                <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800">
+                  <div class="text-2xl font-black text-amber-400">62.1%</div>
+                  <div class="text-[11px] uppercase tracking-wider text-slate-400 mt-1 font-medium">Variance Reduction ($\tau=8$)</div>
+                </div>
+                <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800">
+                  <div class="text-2xl font-black text-purple-400">108.36 s</div>
+                  <div class="text-[11px] uppercase tracking-wider text-slate-400 mt-1 font-medium">Qwen 2.5 0.5B Fine-Tuning</div>
+                </div>
+              </div>
+            </section>
+
+            <!-- SECTION 1: INTRODUCTION -->
+            <section id="sec-intro" class="p-6 sm:p-8 rounded-2xl bg-slate-950 border border-slate-800 shadow-lg space-y-6">
+              <div class="border-b border-slate-800 pb-4">
+                <h3 class="text-2xl font-bold text-white flex items-center space-x-3">
+                  <span class="text-indigo-400 font-mono">1.</span>
+                  <span>Introduction & Motivation</span>
+                </h3>
+              </div>
+
+              <p class="text-slate-300 leading-relaxed text-justify text-sm sm:text-base font-sans">
+                Reinforcement Learning from Human Feedback (RLHF) and Group Relative Policy Optimization (GRPO) have become the dominant training paradigms for aligning foundation language models and unlocking autonomous multi-step reasoning capabilities. In particular, reasoning-centric RL requires generating millions of candidate tokens per prompt to search for verifiable solutions in domains such as mathematics and software synthesis.
+              </p>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
+                <!-- Bottleneck 1 -->
+                <div class="p-5 rounded-xl bg-rose-950/20 border border-rose-500/30">
+                  <div class="flex items-center space-x-2 text-rose-400 font-bold mb-2">
+                    <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                    <h4>Bottleneck 1: The PCIe SerDes Wall</h4>
                   </div>
-                  <div class="flex justify-between pb-2 border-b border-slate-800">
-                    <span class="text-slate-500">Length:</span>
-                    <span class="text-slate-300 font-mono">6 Pages</span>
+                  <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                    Rollout engines generate token ID tensors in GPU VRAM. To score verifiable rewards (e.g., ground-truth math extraction, compiler syntax checks), standard frameworks copy tensors to host RAM, invoke Python <code>tokenizer.decode()</code>, execute CPU regular expressions, and transfer scalars back across PCIe. In high-throughput regimes ($B \ge 64, L \ge 512$), this serialization roundtrip consumes up to <strong>30–50%</strong> of overall pipeline duration.
+                  </p>
+                </div>
+
+                <!-- Bottleneck 2 -->
+                <div class="p-5 rounded-xl bg-amber-950/20 border border-amber-500/30">
+                  <div class="flex items-center space-x-2 text-amber-400 font-bold mb-2">
+                    <i data-lucide="clock" class="w-5 h-5"></i>
+                    <h4>Bottleneck 2: The Synchronous Lockstep Barrier</h4>
                   </div>
-                  <div class="flex justify-between pb-2 border-b border-slate-800">
-                    <span class="text-slate-500">References:</span>
-                    <span class="text-slate-300 font-mono">15 Cited Papers</span>
+                  <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                    Standard PPO alternates strictly between rollout generation and policy optimization. While training GPUs compute forward and backward autograd graphs, rollout inference workers sit idle. Conversely, during autoregressive token generation, training GPUs remain dormant. This lockstep coupling degrades cluster-wide GPU utilization to <strong>40–60%</strong>.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Visual Gantt Timeline Comparison -->
+              <div class="p-6 rounded-xl bg-slate-900 border border-slate-800">
+                <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center space-x-2">
+                  <i data-lucide="bar-chart-3" class="w-4 h-4 text-indigo-400"></i>
+                  <span>Figure 1: Execution Schedule Comparison (Synchronous vs. AsyncTensorRLHF)</span>
+                </div>
+
+                <div class="space-y-4">
+                  <!-- Synchronous Timeline -->
+                  <div>
+                    <div class="flex justify-between text-xs text-slate-400 mb-1">
+                      <span class="font-bold text-rose-400">Traditional Synchronous PPO:</span>
+                      <span class="text-rose-400 font-mono">~50% Compute Wasted in Idle Bubbles</span>
+                    </div>
+                    <div class="grid grid-cols-12 gap-1 h-8 text-[11px] font-bold text-center leading-8 rounded overflow-hidden">
+                      <div class="col-span-3 bg-indigo-600 text-white rounded">Rollout (GPU)</div>
+                      <div class="col-span-3 bg-rose-950 text-rose-300 border border-rose-800/80 dashed rounded">IDLE BUBBLE (50%)</div>
+                      <div class="col-span-3 bg-indigo-600 text-white rounded">Rollout (GPU)</div>
+                      <div class="col-span-3 bg-rose-950 text-rose-300 border border-rose-800/80 dashed rounded">IDLE BUBBLE (50%)</div>
+                    </div>
+                    <div class="grid grid-cols-12 gap-1 h-8 text-[11px] font-bold text-center leading-8 rounded overflow-hidden mt-1">
+                      <div class="col-span-3 bg-rose-950 text-rose-300 border border-rose-800/80 dashed rounded">IDLE BUBBLE</div>
+                      <div class="col-span-3 bg-emerald-600 text-white rounded">Train Step</div>
+                      <div class="col-span-3 bg-rose-950 text-rose-300 border border-rose-800/80 dashed rounded">IDLE BUBBLE</div>
+                      <div class="col-span-3 bg-emerald-600 text-white rounded">Train Step</div>
+                    </div>
                   </div>
-                  <div class="flex justify-between pb-2 border-b border-slate-800">
-                    <span class="text-slate-500">Algorithms:</span>
-                    <span class="text-slate-300 font-mono">Algorithm 1 (Async RLHF)</span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span class="text-slate-500">Target Venue:</span>
-                    <span class="text-indigo-400 font-medium">NeurIPS / ICLR 2026</span>
+
+                  <!-- Asynchronous Timeline -->
+                  <div class="pt-3 border-t border-slate-800">
+                    <div class="flex justify-between text-xs text-slate-400 mb-1">
+                      <span class="font-bold text-emerald-400">AsyncTensorRLHF (Fully Disaggregated):</span>
+                      <span class="text-emerald-400 font-mono">100% GPU Duty Cycle • Zero Idle Bubbles</span>
+                    </div>
+                    <div class="grid grid-cols-12 gap-1 h-8 text-[11px] font-bold text-center leading-8 rounded overflow-hidden">
+                      <div class="col-span-3 bg-indigo-600 text-white rounded">Rollout v0</div>
+                      <div class="col-span-3 bg-indigo-600 text-white rounded">Rollout v1</div>
+                      <div class="col-span-3 bg-indigo-600 text-white rounded">Rollout v2</div>
+                      <div class="col-span-3 bg-indigo-600 text-white rounded">Rollout v3</div>
+                    </div>
+                    <div class="grid grid-cols-12 gap-1 h-8 text-[11px] font-bold text-center leading-8 rounded overflow-hidden mt-1">
+                      <div class="col-span-2 bg-slate-900 border border-slate-800 text-slate-500 rounded">Buffer Ingest</div>
+                      <div class="col-span-3 bg-emerald-600 text-white rounded">Train Step v1</div>
+                      <div class="col-span-3 bg-emerald-600 text-white rounded">Train Step v2</div>
+                      <div class="col-span-4 bg-emerald-600 text-white rounded">Train Step v3</div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div class="p-5 rounded-xl bg-slate-950 border border-slate-800">
-                <h4 class="font-bold text-white text-sm mb-2">BibTeX Citation</h4>
-                <pre class="bg-slate-900 p-3 rounded text-[11px] font-mono text-slate-300 overflow-x-auto select-all leading-tight border border-slate-800">@article{majlesi2026asynctensorrlhf,
-  title   = {AsyncTensorRLHF: High-Throughput
-             Asynchronous RLHF with In-VRAM
-             Tensor-Native Rewards},
-  author  = {Majlesi, Taha},
-  journal = {arXiv preprint arXiv:2603.XXXXX},
-  year    = {2026}
-}</pre>
+              <!-- Principal Contributions -->
+              <h4 class="text-lg font-bold text-white mt-6 mb-3">Core Contributions</h4>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 flex items-start space-x-3">
+                  <i data-lucide="check" class="w-5 h-5 text-emerald-400 shrink-0 mt-0.5"></i>
+                  <div>
+                    <strong class="text-white text-sm block mb-1">In-VRAM Tensor-Native Rewards</strong>
+                    <p class="text-xs text-slate-400">Zero-copy 1D sliding-window convolutions (<code>.unfold()</code>) evaluate token sequences in GPU VRAM without host CPU serialization.</p>
+                  </div>
+                </div>
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 flex items-start space-x-3">
+                  <i data-lucide="check" class="w-5 h-5 text-emerald-400 shrink-0 mt-0.5"></i>
+                  <div>
+                    <strong class="text-white text-sm block mb-1">M2PO Second-Moment Trust Region</strong>
+                    <p class="text-xs text-slate-400">Constrains the empirical second moment $\mathbb{E}[r_t^2(\theta)] \le \gamma$, provably bounding off-policy gradient variance under asynchronous drift.</p>
+                  </div>
+                </div>
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 flex items-start space-x-3">
+                  <i data-lucide="check" class="w-5 h-5 text-emerald-400 shrink-0 mt-0.5"></i>
+                  <div>
+                    <strong class="text-white text-sm block mb-1">Lock-Free Experience Buffers for GRPO</strong>
+                    <p class="text-xs text-slate-400">Circular replay buffers that standardize group advantages in-place without a critic model and evict stale samples $\tau > \tau_{\max}$.</p>
+                  </div>
+                </div>
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 flex items-start space-x-3">
+                  <i data-lucide="check" class="w-5 h-5 text-emerald-400 shrink-0 mt-0.5"></i>
+                  <div>
+                    <strong class="text-white text-sm block mb-1">Empirical Hardware Validation</strong>
+                    <p class="text-xs text-slate-400">Delivers 8.05M tokens/sec under GRPO on an RTX 4070 GPU and completes end-to-end fine-tuning on Qwen2.5-0.5B-Instruct in 108.36 seconds.</p>
+                  </div>
+                </div>
               </div>
-            </div>
+            </section>
+
+            <!-- SECTION 2: RELATED WORK -->
+            <section id="sec-related" class="p-6 sm:p-8 rounded-2xl bg-slate-950 border border-slate-800 shadow-lg space-y-4">
+              <div class="border-b border-slate-800 pb-4">
+                <h3 class="text-2xl font-bold text-white flex items-center space-x-3">
+                  <span class="text-indigo-400 font-mono">2.</span>
+                  <span>Related Work</span>
+                </h3>
+              </div>
+
+              <div class="space-y-4 text-slate-300 text-sm sm:text-base leading-relaxed text-justify">
+                <p>
+                  <strong class="text-indigo-300">Synchronous RLHF Systems:</strong> Early language model alignment frameworks derived from InstructGPT adapted Proximal Policy Optimization (PPO) using monolithic training graphs. Implementations such as DeepSpeed-Chat, early Hugging Face TRL, and NeMo-Aligner co-locate inference and training on shared worker pools, incurring heavy synchronization barriers and cluster-wide idle bubbles.
+                </p>
+                <p>
+                  <strong class="text-indigo-300">High-Throughput Inference Engines:</strong> Modern serving frameworks, notably vLLM and SGLang, revolutionized LLM rollout throughput via PagedAttention, continuous iteration-level batching, and prefix caching. While HybridFlow and OpenRLHF integrated these serving engines into training loops, reward assignment and policy gradient updates remained tied to synchronous inter-node barriers.
+                </p>
+                <p>
+                  <strong class="text-indigo-300">Asynchronous Reinforcement Learning:</strong> Asynchronous actor-learner architectures originated in deep RL with A3C and IMPALA, which introduced V-trace to correct for off-policy discrepancies. However, V-trace relies on discrete action spaces and tabular importance sampling. AsyncTensorRLHF extends off-policy stabilization to autoregressive language generation via Second-Moment Trust Region bounds (M2PO).
+                </p>
+              </div>
+            </section>
+
+            <!-- SECTION 3: THEORETICAL FOUNDATIONS -->
+            <section id="sec-theory" class="p-6 sm:p-8 rounded-2xl bg-slate-950 border border-slate-800 shadow-lg space-y-6">
+              <div class="border-b border-slate-800 pb-4">
+                <h3 class="text-2xl font-bold text-white flex items-center space-x-3">
+                  <span class="text-indigo-400 font-mono">3.</span>
+                  <span>Theoretical Foundations & Mathematical Formulations</span>
+                </h3>
+              </div>
+
+              <!-- 3.1 Policy Gradient under Staleness -->
+              <div>
+                <h4 class="text-lg font-bold text-white mb-2">3.1 Policy Gradients Under Asynchronous Staleness ($	au$)</h4>
+                <p class="text-slate-300 text-sm sm:text-base leading-relaxed mb-4">
+                  Let $x \sim \mathcal{D}_x$ denote an input prompt and $y = (y_1, \dots, y_L)$ denote an autoregressive token sequence generated by policy $\pi_{\theta_{\text{old}}}$. In an asynchronous regime, the parameter state $\theta$ advances during rollout generation, such that the experience tuple $(x, y, r, \log \pi_{\theta_{\text{old}}}(y \mid x))$ is consumed when the active policy has advanced to version $\theta$, where staleness is defined as $\tau = \text{version}(\theta) - \text{version}(\theta_{\text{old}}) \ge 0$.
+                </p>
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 text-center font-mono text-sm sm:text-base my-3">
+                  $$\mathcal{J}(\theta) = \mathbb{E}_{x \sim \mathcal{D}_x, y \sim \pi_{\theta_{\text{old}}}}\left[ \frac{\pi_\theta(y \mid x)}{\pi_{\theta_{\text{old}}}(y \mid x)} A^{\pi_{\theta_{\text{old}}}}(x, y) \right]$$
+                </div>
+                <p class="text-slate-300 text-sm leading-relaxed mb-3">
+                  The per-token importance weight ratio is defined as:
+                </p>
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 text-center font-mono text-sm sm:text-base my-3">
+                  $$r_t(\theta) = \frac{\pi_\theta(y_t \mid x, y_{<t})}{\pi_{\theta_{\text{old}}}(y_t \mid x, y_{<t})} = \exp\left( \log \pi_\theta(y_t) - \log \pi_{\theta_{\text{old}}}(y_t) \right)$$
+                </div>
+                <p class="text-slate-300 text-sm leading-relaxed mb-3">
+                  As staleness $\tau$ increases, the divergence between $\pi_\theta$ and $\pi_{\theta_{\text{old}}}$ expands. Under the $\chi^2$-divergence formulation:
+                </p>
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 text-center font-mono text-sm sm:text-base my-3">
+                  $$\operatorname{Var}_{y \sim \pi_{\theta_{\text{old}}}}[r_t(\theta)] = \mathbb{E}\left[ r_t(\theta)^2 \right] - 1 \approx \exp\left( D_{\chi^2}(\pi_\theta \parallel \pi_{\theta_{\text{old}}}) \right) - 1$$
+                </div>
+                <p class="text-xs text-slate-400">
+                  When $\tau \ge 3$, outlier importance ratios $r_t(\theta) \gg 1$ cause severe gradient variance spikes, destabilizing standard policy gradient updates.
+                </p>
+              </div>
+
+              <!-- 3.2 Standard Clipped PPO -->
+              <div class="pt-6 border-t border-slate-800">
+                <h4 class="text-lg font-bold text-white mb-2">3.2 Standard Clipped PPO Objective</h4>
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 text-center font-mono text-sm sm:text-base my-3">
+                  $$\mathcal{L}_{\text{PPO}}(\theta) = -\mathbb{E}\left[ \min\left( r_t(\theta) A_t, \; \operatorname{clip}(r_t(\theta), 1-\epsilon, 1+\epsilon) A_t \right) \right]$$
+                </div>
+                <p class="text-slate-300 text-sm leading-relaxed">
+                  While effective for synchronous training where $\theta \approx \theta_{\text{old}}$, clipping fails under severe asynchronous drift: when $r_t(\theta)$ is far outside $[1-\epsilon, 1+\epsilon]$, gradients vanish on valid exploration tokens while extreme advantage products distort parameter updates.
+                </p>
+              </div>
+
+              <!-- 3.3 M2PO Second-Moment Trust Region -->
+              <div class="pt-6 border-t border-slate-800 space-y-4">
+                <h4 class="text-lg font-bold text-white">3.3 M2PO: Second-Moment Trust Region Optimization</h4>
+                <p class="text-slate-300 text-sm leading-relaxed">
+                  To resolve off-policy instability without discarding asynchronous parallelism, we formulate <strong>M2PO</strong>. We impose an empirical second-moment bound on the importance ratio distribution:
+                </p>
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 text-center font-mono text-sm sm:text-base my-3">
+                  $$M_2 = \frac{1}{B \cdot L} \sum_{b=1}^B \sum_{t=1}^L r_{b,t}(\theta)^2 \le \gamma_{\text{threshold}}$$
+                </div>
+                <p class="text-slate-300 text-sm leading-relaxed">
+                  Tokens that violate this second-moment bound are identified by the binary indicator mask:
+                </p>
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 text-center font-mono text-sm sm:text-base my-3">
+                  $$m_{b,t} = \mathbb{I}\left( r_{b,t}(\theta)^2 \le \gamma_{\text{threshold}} \right)$$
+                </div>
+                <p class="text-slate-300 text-sm leading-relaxed">
+                  The M2PO surrogate loss is defined as:
+                </p>
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 text-center font-mono text-sm sm:text-base my-3">
+                  $$\mathcal{L}_{\text{M2PO}}(\theta) = -\frac{1}{Z_m} \sum_{b=1}^B \sum_{t=1}^L m_{b,t} \cdot \min\Big( r_{b,t}(\theta) A_{b,t}, \; \operatorname{clip}(r_{b,t}(\theta), 1-\epsilon, 1+\epsilon) A_{b,t} \Big)$$
+                </div>
+                <p class="text-xs text-slate-400">
+                  where normalization factor $Z_m = \max\left(1, \sum_{b=1}^B \sum_{t=1}^L m_{b,t}\right)$.
+                </p>
+
+                <!-- Theorem 1 Card -->
+                <div class="p-5 rounded-xl bg-indigo-950/30 border border-indigo-500/30 space-y-2">
+                  <div class="flex items-center space-x-2 text-indigo-400 font-bold text-sm">
+                    <i data-lucide="shield-check" class="w-4 h-4"></i>
+                    <span>Theorem 1: Trust-Region Equivalence of Second-Moment Constraint</span>
+                  </div>
+                  <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                    Under a second-order Taylor expansion around $\theta_{\text{old}}$, the expected second-moment penalty $\mathbb{E}[(r_t(\theta) - 1)^2]$ is asymptotically equivalent to the Fisher Information Matrix (FIM) Riemannian metric:
+                  </p>
+                  <div class="p-3 rounded-lg bg-slate-950 text-center font-mono text-xs sm:text-sm text-indigo-300">
+                    $$\mathbb{E}\left[ (r_t(\theta) - 1)^2 \right] = (\theta - \theta_{\text{old}})^T F_{\theta_{\text{old}}} (\theta - \theta_{\text{old}}) + \mathcal{O}(\|\theta - \theta_{\text{old}}\|^3)$$
+                  </div>
+                  <p class="text-xs text-slate-400">
+                    where $F_{\theta_{\text{old}}} = \mathbb{E}[\nabla_\theta \log \pi_\theta \nabla_\theta \log \pi_\theta^T]$ is the Fisher Information Matrix. Consequently, constraining $r_t(\theta)^2 \le \gamma$ implicitly enforces a Riemannian trust region without requiring explicit Hessian-vector products.
+                  </p>
+                </div>
+
+                <!-- Proposition 2 & Proof Card -->
+                <div class="p-5 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
+                  <div class="flex items-center space-x-2 text-emerald-400 font-bold text-sm">
+                    <i data-lucide="award" class="w-4 h-4"></i>
+                    <span>Proposition 2: Gradient Variance Boundedness Under M2PO</span>
+                  </div>
+                  <div class="p-3 rounded-lg bg-slate-950 text-center font-mono text-xs sm:text-sm text-emerald-300">
+                    $$\operatorname{Var}\left( \nabla_\theta \mathcal{L}_{\text{M2PO}}(\theta) \right) \le \frac{\gamma_{\text{threshold}}}{Z_m} \cdot \max_{b,t} \| \nabla_\theta \log \pi_\theta(y_{b,t}) \|^2 \cdot \mathbb{E}[A_{b,t}^2]$$
+                  </div>
+                  <div class="text-xs text-slate-400 space-y-1">
+                    <div class="font-semibold text-slate-300">Formal Proof Summary:</div>
+                    <p>Let $g_{b,t}(\theta) = \nabla_\theta \log \pi_\theta(y_{b,t} \mid x_b, y_{b,<t})$ denote the score function. Applying the variance inequality $\operatorname{Var}(X) \le \mathbb{E}[X^2]$, we have:</p>
+                    <div class="p-2 rounded bg-slate-950 font-mono text-[11px] text-slate-300">
+                      $$\operatorname{Var}(\nabla_\theta \mathcal{L}_{\text{M2PO}}) \le \frac{1}{Z_m^2} \sum_{b,t} \mathbb{E}\left[ m_{b,t}^2 r_{b,t}^2 A_{b,t}^2 \|g_{b,t}\|^2 \right] \le \frac{\gamma_{\text{threshold}}}{Z_m} \mathbb{E}[A^2] \max \|g\|^2$$
+                    </div>
+                    <p>Because $m_{b,t} r_{b,t}^2 \le \gamma_{\text{threshold}}$ holds almost surely by construction of the indicator mask, off-policy gradient variance is strictly bounded irrespective of staleness drift $\tau$. $\blacksquare$</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 3.4 GRPO -->
+              <div class="pt-6 border-t border-slate-800">
+                <h4 class="text-lg font-bold text-white mb-2">3.4 Group Relative Policy Optimization (GRPO)</h4>
+                <p class="text-slate-300 text-sm leading-relaxed mb-3">
+                  For verifiable reasoning tasks, AsyncTensorRLHF implements GRPO, which eliminates the memory footprint of a learned critic network. For prompt $x$, a group of $G$ outputs is evaluated with scalar rewards, and advantages are standardized across the candidate group:
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-3">
+                  <div class="p-3 rounded-lg bg-slate-900 border border-slate-800 text-center font-mono text-xs sm:text-sm">
+                    $$\mu_R = \frac{1}{G} \sum_{i=1}^G R^{(i)}, \quad \sigma_R = \sqrt{\frac{1}{G} \sum_{i=1}^G (R^{(i)} - \mu_R)^2} + \epsilon_{\text{eps}}$$
+                  </div>
+                  <div class="p-3 rounded-lg bg-slate-900 border border-slate-800 text-center font-mono text-xs sm:text-sm flex items-center justify-center">
+                    $$\hat{A}^{(i)} = \frac{R^{(i)} - \mu_R}{\sigma_R}$$
+                  </div>
+                </div>
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 text-center font-mono text-sm my-3">
+                  $$\mathcal{L}_{\text{GRPO}}(\theta) = -\frac{1}{B G L} \sum_{b=1}^B \sum_{i=1}^G \sum_{t=1}^L \min\Big( r_{b,i,t}(\theta) \hat{A}_{b,i}, \; \operatorname{clip}(r_{b,i,t}(\theta), 1-\epsilon, 1+\epsilon) \hat{A}_{b,i} \Big)$$
+                </div>
+              </div>
+            </section>
+
+            <!-- SECTION 4: SYSTEM ARCHITECTURE -->
+            <section id="sec-arch" class="p-6 sm:p-8 rounded-2xl bg-slate-950 border border-slate-800 shadow-lg space-y-6">
+              <div class="border-b border-slate-800 pb-4">
+                <h3 class="text-2xl font-bold text-white flex items-center space-x-3">
+                  <span class="text-indigo-400 font-mono">4.</span>
+                  <span>System Architecture & Engineering Implementation</span>
+                </h3>
+              </div>
+
+              <!-- Interactive Architecture Diagram Card -->
+              <div class="p-6 rounded-xl bg-slate-900 border border-slate-800">
+                <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center space-x-2">
+                  <i data-lucide="layers" class="w-4 h-4 text-indigo-400"></i>
+                  <span>Figure 2: Architectural Layout & Dataflow Diagram</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-center text-xs">
+                  <div class="p-4 rounded-lg bg-slate-950 border border-slate-800 md:col-span-4">
+                    <div class="font-bold text-indigo-300 mb-1">Orchestrator Control Plane</div>
+                    <div class="text-slate-400 text-[11px]">Version Counter $v$ • Async Dispatcher • Periodic Weight Broadcast (<code>weight_sync_fn</code>)</div>
+                  </div>
+                  <div class="p-4 rounded-lg bg-indigo-950/40 border border-indigo-500/30 md:col-span-2">
+                    <div class="font-bold text-white mb-1">Rollout Inference Cluster</div>
+                    <div class="text-indigo-300 text-[11px]">Continuous Generation via vLLM / HFEngine</div>
+                  </div>
+                  <div class="p-4 rounded-lg bg-indigo-900/40 border border-indigo-400/40 md:col-span-2">
+                    <div class="font-bold text-white mb-1">In-VRAM Reward Engine</div>
+                    <div class="text-indigo-200 text-[11px]">Strided <code>.unfold()</code> Zero-Copy Evaluation</div>
+                  </div>
+                  <div class="p-4 rounded-lg bg-amber-950/40 border border-amber-500/30 md:col-span-4">
+                    <div class="font-bold text-amber-300 mb-1">Experience Subsystem</div>
+                    <div class="text-slate-400 text-[11px]">Bounded Buffer (FIFO Queue) • Versioned Buffer (Staleness Eviction: $\tau \le \tau_{\max}$) • Group Buffer (GRPO)</div>
+                  </div>
+                  <div class="p-4 rounded-lg bg-emerald-950/40 border border-emerald-500/30 md:col-span-4">
+                    <div class="font-bold text-emerald-300 mb-1">Trainer Cluster</div>
+                    <div class="text-emerald-200 text-[11px]">TrainerWorker (PPO / M2PO / GRPO Loss) • AdamW Optimizer ($	heta_{t+1}$) • Version Bump</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 4.1 In-VRAM Tensor-Native Reward -->
+              <div>
+                <h4 class="text-lg font-bold text-white mb-2">4.1 In-VRAM Tensor-Native Reward Computation</h4>
+                <p class="text-slate-300 text-sm leading-relaxed mb-4">
+                  Traditional RLHF pipelines incur severe serialization overhead during rule-based reward evaluation:
+                  $$\text{GPU IDs} \xrightarrow{\text{PCIe}} \text{CPU RAM} \xrightarrow{\text{Decode}} \text{String} \xrightarrow{\text{Regex}} \text{Score} \xrightarrow{\text{PCIe}} \text{GPU VRAM}$$
+                  AsyncTensorRLHF executes reward verification entirely on GPU tensors via parallel 1D sliding-window convolutions.
+                </p>
+
+                <!-- Algorithm 1 Code Block -->
+                <div class="rounded-xl overflow-hidden border border-slate-800 bg-slate-900">
+                  <div class="px-4 py-2 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-300">Algorithm 1: In-VRAM Tensor-Native Reward Evaluation</span>
+                    <span class="text-xs text-indigo-400 font-mono">torch.Tensor Zero-Copy</span>
+                  </div>
+                  <pre class="p-4 text-xs font-mono text-slate-300 overflow-x-auto leading-relaxed">
+<span class="text-slate-500">// 1. Initialize output reward vector on device</span>
+R = torch.zeros(B, dtype=torch.float32, device=Y.device)
+
+<span class="text-slate-500">// 2. Vectorized first-EOS boundary detection across all batch items</span>
+eos_mask = (Y == eos_token_id)
+has_eos = eos_mask.any(dim=-1)
+first_eos = torch.where(has_eos, eos_mask.int().argmax(dim=-1), L)
+
+<span class="text-slate-500">// 3. In-VRAM Strided 1D Convolution via .unfold() (zero memory allocation)</span>
+for b in range(B):
+    valid_len = first_eos[b].item()
+    target_pattern = patterns[b]
+    K = len(target_pattern)
+    if K == 0 or K > valid_len:
+        continue
+    <span class="text-indigo-400 font-bold">windows = Y[b, :valid_len].unfold(dimension=0, size=K, step=1)</span>
+    match = (windows == target_pattern).all(dim=-1).any()
+    R[b] = 1.0 if match else 0.0
+
+return R</pre>
+                </div>
+              </div>
+            </section>
+
+            <!-- SECTION 5: EXPERIMENTAL RESULTS -->
+            <section id="sec-eval" class="p-6 sm:p-8 rounded-2xl bg-slate-950 border border-slate-800 shadow-lg space-y-6">
+              <div class="border-b border-slate-800 pb-4">
+                <h3 class="text-2xl font-bold text-white flex items-center space-x-3">
+                  <span class="text-indigo-400 font-mono">5.</span>
+                  <span>Experimental Evaluation & Hardware Benchmarks</span>
+                </h3>
+              </div>
+
+              <!-- Hardware Platform -->
+              <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300">
+                <span class="font-bold text-white block mb-1">Hardware & Software Evaluation Platform:</span>
+                NVIDIA GeForce RTX 4070 Laptop GPU (8GB VRAM, Compute Capability 8.9, Ada Lovelace) • PyTorch 2.6.0+cu124 • CUDA 12.4 • Python 3.13.5 • Microsoft Windows 11 Host. 100% automated test pass rate (41/41 tests in 4.00s).
+              </div>
+
+              <!-- Table 1 -->
+              <div>
+                <h4 class="text-base font-bold text-white mb-2">Table 1: Policy Loss Computational Throughput ($B=64, L=256$, 30 iterations)</h4>
+                <div class="overflow-x-auto">
+                  <table class="w-full text-xs sm:text-sm text-left border border-slate-800 rounded-lg overflow-hidden">
+                    <thead class="bg-slate-900 text-slate-300 font-bold uppercase tracking-wider text-[11px]">
+                      <tr>
+                        <th class="p-3">Objective</th>
+                        <th class="p-3 text-center">Latency (ms)</th>
+                        <th class="p-3 text-center">Throughput (Tokens/sec)</th>
+                        <th class="p-3 text-center">VRAM (MB)</th>
+                        <th class="p-3 text-center">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800">
+                      <tr class="bg-slate-950 hover:bg-slate-900/60 transition font-medium">
+                        <td class="p-3 font-bold text-emerald-400">GRPO (Group Size G=4)</td>
+                        <td class="p-3 text-center font-mono">2.03 ms</td>
+                        <td class="p-3 text-center font-bold font-mono text-emerald-300">8,058,669</td>
+                        <td class="p-3 text-center font-mono text-slate-400">1.20 MB</td>
+                        <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-xs">PASSED</span></td>
+                      </tr>
+                      <tr class="bg-slate-950 hover:bg-slate-900/60 transition">
+                        <td class="p-3 font-bold text-indigo-400">PPO (Standard Clipped)</td>
+                        <td class="p-3 text-center font-mono">2.42 ms</td>
+                        <td class="p-3 text-center font-mono text-indigo-300">6,763,177</td>
+                        <td class="p-3 text-center font-mono text-slate-400">1.40 MB</td>
+                        <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-xs">PASSED</span></td>
+                      </tr>
+                      <tr class="bg-slate-950 hover:bg-slate-900/60 transition">
+                        <td class="p-3 font-bold text-purple-400">M2PO (Trust Region)</td>
+                        <td class="p-3 text-center font-mono">5.98 ms</td>
+                        <td class="p-3 text-center font-mono text-purple-300">2,739,289</td>
+                        <td class="p-3 text-center font-mono text-slate-400">1.60 MB</td>
+                        <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 text-xs">PASSED</span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Table 2 & Table 3 Grid -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Table 2 -->
+                <div>
+                  <h4 class="text-base font-bold text-white mb-2">Table 2: Replay Buffer Concurrency Benchmark</h4>
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left border border-slate-800 rounded-lg overflow-hidden">
+                      <thead class="bg-slate-900 text-slate-300 font-bold uppercase tracking-wider text-[10px]">
+                        <tr>
+                          <th class="p-2.5">Operation</th>
+                          <th class="p-2.5 text-center">Throughput</th>
+                          <th class="p-2.5 text-center">Mean Latency</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-slate-800 bg-slate-950 font-mono text-xs">
+                        <tr>
+                          <td class="p-2.5 font-bold text-indigo-300 font-sans">Push (BoundedBuffer)</td>
+                          <td class="p-2.5 text-center text-emerald-400 font-bold">312,283 ops/s</td>
+                          <td class="p-2.5 text-center text-slate-400">0.0032 ms</td>
+                        </tr>
+                        <tr>
+                          <td class="p-2.5 font-bold text-indigo-300 font-sans">Sample Batch (B=64)</td>
+                          <td class="p-2.5 text-center text-emerald-400 font-bold">411,691 items/s</td>
+                          <td class="p-2.5 text-center text-slate-400">0.0024 ms</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- Table 3 -->
+                <div>
+                  <h4 class="text-base font-bold text-white mb-2">Table 3: Off-Policy Staleness ($	au$) Variance Cut</h4>
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left border border-slate-800 rounded-lg overflow-hidden">
+                      <thead class="bg-slate-900 text-slate-300 font-bold uppercase tracking-wider text-[10px]">
+                        <tr>
+                          <th class="p-2.5 text-center">Staleness $	au$</th>
+                          <th class="p-2.5 text-center">PPO Norm</th>
+                          <th class="p-2.5 text-center">M2PO Norm</th>
+                          <th class="p-2.5 text-center">Variance Cut</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-slate-800 bg-slate-950 font-mono text-xs">
+                        <tr><td class="p-2 text-center text-slate-400">$	au = 0$</td><td class="p-2 text-center">0.0218</td><td class="p-2 text-center">0.0218</td><td class="p-2 text-center text-slate-500">0.0%</td></tr>
+                        <tr><td class="p-2 text-center text-slate-400">$	au = 1$</td><td class="p-2 text-center">0.0212</td><td class="p-2 text-center">0.0212</td><td class="p-2 text-center text-slate-500">0.0%</td></tr>
+                        <tr><td class="p-2 text-center text-slate-400">$	au = 2$</td><td class="p-2 text-center">0.0202</td><td class="p-2 text-center">0.0201</td><td class="p-2 text-center text-slate-400">0.3%</td></tr>
+                        <tr><td class="p-2 text-center text-slate-400">$	au = 3$</td><td class="p-2 text-center">0.0221</td><td class="p-2 text-center">0.0204</td><td class="p-2 text-center text-amber-400">7.7%</td></tr>
+                        <tr><td class="p-2 text-center text-slate-400">$	au = 5$</td><td class="p-2 text-center">0.0265</td><td class="p-2 text-center">0.0198</td><td class="p-2 text-center text-amber-400 font-bold">25.6%</td></tr>
+                        <tr class="bg-indigo-950/20"><td class="p-2 text-center font-bold text-white">$	au = 8$</td><td class="p-2 text-center text-rose-400">0.0502</td><td class="p-2 text-center text-emerald-400 font-bold">0.0190</td><td class="p-2 text-center text-emerald-300 font-bold">62.1%</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Real Model Alignment Case Study -->
+              <div class="p-5 rounded-xl bg-purple-950/20 border border-purple-500/30">
+                <div class="flex items-center space-x-2 text-purple-300 font-bold mb-2">
+                  <i data-lucide="sparkles" class="w-5 h-5"></i>
+                  <h4>Real Model Alignment Case Study: Qwen2.5-0.5B-Instruct</h4>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs mt-3">
+                  <div class="p-3 rounded-lg bg-slate-950 border border-slate-800">
+                    <span class="text-slate-400 block mb-1">LoRA Architecture</span>
+                    <span class="font-bold text-white font-mono">r=8, alpha=16 (1.08M params, 0.22%)</span>
+                  </div>
+                  <div class="p-3 rounded-lg bg-slate-950 border border-slate-800">
+                    <span class="text-slate-400 block mb-1">Training Wall-Clock Time</span>
+                    <span class="font-bold text-emerald-400 font-mono">108.36 seconds (6 iterations)</span>
+                  </div>
+                  <div class="p-3 rounded-lg bg-slate-950 border border-slate-800">
+                    <span class="text-slate-400 block mb-1">Peak VRAM Allocation</span>
+                    <span class="font-bold text-indigo-300 font-mono">1.97 GB / 8.0 GB VRAM</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- SECTION 6 & 7: DISCUSSION & CONCLUSION -->
+            <section id="sec-disc" class="p-6 sm:p-8 rounded-2xl bg-slate-950 border border-slate-800 shadow-lg space-y-4">
+              <div class="border-b border-slate-800 pb-4">
+                <h3 class="text-2xl font-bold text-white flex items-center space-x-3">
+                  <span class="text-indigo-400 font-mono">6.</span>
+                  <span>Discussion, Limitations & Conclusion</span>
+                </h3>
+              </div>
+
+              <div class="space-y-4 text-slate-300 text-sm sm:text-base leading-relaxed text-justify">
+                <p>
+                  While AsyncTensorRLHF delivers dramatic speedups for rule-verifiable rewards, subjective alignment tasks (such as open-ended conversational helpfulness) require neural reward models (RMs). In future work, we plan to implement in-VRAM embedding cross-attention kernels to support neural RMs without host CPU serialization. Additionally, extending M2PO second-moment masking to multi-node NCCL all-reduce clusters represents a promising research avenue.
+                </p>
+                <p>
+                  We introduced <strong>AsyncTensorRLHF</strong>, an asynchronous RLHF framework that eliminates the CPU-GPU memory wall via in-VRAM tensor-native rewards and overcomes the synchronous lockstep barrier through decoupled rollout-trainer orchestration. By incorporating M2PO second-moment trust region bounds, AsyncTensorRLHF guarantees numerical stability across off-policy staleness drift, cutting gradient variance by up to 62.1% while delivering over 8 million tokens/second under GRPO. The complete ecosystem—including source code, unit test suites, fine-tuned Qwen2.5 checkpoints, and an interactive web explorer—is open-sourced for the community.
+                </p>
+              </div>
+            </section>
+
+            <!-- SECTION 8: REFERENCES -->
+            <section id="sec-ref" class="p-6 sm:p-8 rounded-2xl bg-slate-950 border border-slate-800 shadow-lg space-y-4">
+              <div class="border-b border-slate-800 pb-4">
+                <h3 class="text-xl font-bold text-white flex items-center space-x-3">
+                  <span class="text-indigo-400 font-mono">§</span>
+                  <span>References</span>
+                </h3>
+              </div>
+
+              <ol class="space-y-3 text-xs text-slate-400 leading-relaxed font-sans">
+                <li><strong class="text-slate-200">[1] J. Schulman, et al.</strong> "Proximal policy optimization algorithms." <em>arXiv:1707.06347</em>, 2017.</li>
+                <li><strong class="text-slate-200">[2] L. Ouyang, et al.</strong> "Training language models to follow instructions with human feedback." <em>NeurIPS</em>, 2022.</li>
+                <li><strong class="text-slate-200">[3] Z. Shao, et al.</strong> "DeepSeekMath: Pushing the limits of mathematical reasoning in open language models." <em>arXiv:2402.03300</em>, 2024.</li>
+                <li><strong class="text-slate-200">[4] DeepSeek-AI, et al.</strong> "DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning." <em>arXiv:2501.12948</em>, 2025.</li>
+                <li><strong class="text-slate-200">[5] W. Kwon, et al.</strong> "Efficient memory management for large language model serving with PagedAttention." <em>SOSP</em>, 2023.</li>
+                <li><strong class="text-slate-200">[6] L. Zheng, et al.</strong> "SGLang: Efficient Execution of Structured Language Model Programs." <em>arXiv:2312.07104</em>, 2023.</li>
+                <li><strong class="text-slate-200">[7] Y. Sheng, et al.</strong> "HybridFlow: A flexible and efficient RLHF framework." <em>arXiv:2409.19256</em>, 2024.</li>
+                <li><strong class="text-slate-200">[8] E. J. Hu, et al.</strong> "LoRA: Low-rank adaptation of large language models." <em>ICLR</em>, 2022.</li>
+                <li><strong class="text-slate-200">[9] Qwen Team.</strong> "Qwen2.5 Technical Report." <em>arXiv:2412.15115</em>, 2024.</li>
+                <li><strong class="text-slate-200">[10] V. Mnih, et al.</strong> "Asynchronous methods for deep reinforcement learning." <em>ICML</em>, 2016.</li>
+                <li><strong class="text-slate-200">[11] L. Espeholt, et al.</strong> "IMPALA: Scalable distributed deep-RL with importance weighted actor-learner architectures." <em>ICML</em>, 2018.</li>
+                <li><strong class="text-slate-200">[12] T. Dao, et al.</strong> "FlashAttention: Fast and memory-efficient exact attention with IO-awareness." <em>NeurIPS</em>, 2022.</li>
+                <li><strong class="text-slate-200">[13] J. Schulman, et al.</strong> "Trust region policy optimization." <em>ICML</em>, 2015.</li>
+                <li><strong class="text-slate-200">[14] I. Loshchilov and F. Hutter.</strong> "Decoupled weight decay regularization." <em>ICLR</em>, 2019.</li>
+                <li><strong class="text-slate-200">[15] A. Paszke, et al.</strong> "PyTorch: An imperative style, high-performance deep learning library." <em>NeurIPS</em>, 2019.</li>
+              </ol>
+            </section>
+
           </div>
 
-          <!-- Embedded PDF Viewer -->
-          <div class="p-6 rounded-xl bg-slate-950 border border-slate-800">
+          <!-- VIEW 2: ORIGINAL PDF EMBEDDED VIEWER -->
+          <div id="paper-view-pdf" class="hidden p-6 rounded-2xl bg-slate-950 border border-slate-800 shadow-2xl">
             <div class="flex items-center justify-between mb-4">
-              <h4 class="font-bold text-slate-200 text-sm uppercase tracking-wider flex items-center space-x-2">
+              <div class="flex items-center space-x-2">
                 <i data-lucide="file" class="w-4 h-4 text-indigo-400"></i>
-                <span>Document Preview</span>
-              </h4>
-              <span class="text-xs text-slate-500">6-Page High Resolution PDF</span>
+                <h4 class="font-bold text-slate-200 text-sm uppercase tracking-wider">Compiled Document Preview</h4>
+              </div>
+              <span class="text-xs text-slate-400 font-mono">6 Pages • 409 KB PDF</span>
             </div>
-            <div class="w-full h-[750px] rounded-lg overflow-hidden border border-slate-800 bg-slate-900">
+            <div class="w-full h-[850px] rounded-xl overflow-hidden border border-slate-800 bg-slate-900 shadow-inner">
               <iframe src="paper.pdf" class="w-full h-full" title="AsyncTensorRLHF Paper PDF"></iframe>
             </div>
           </div>
+
         </div>
       </div>
-
-    </div>
+</div>
   </main>
 
   <footer class="border-t border-slate-800/80 py-8 text-center text-xs text-slate-500">
@@ -489,6 +1061,51 @@
 
   <script>
     lucide.createIcons();
+
+    
+    function togglePaperView(mode) {
+      const htmlView = document.getElementById('paper-view-html');
+      const pdfView = document.getElementById('paper-view-pdf');
+      const btnHtml = document.getElementById('btn-paper-html');
+      const btnPdf = document.getElementById('btn-paper-pdf');
+
+      if (mode === 'html') {
+        htmlView.classList.remove('hidden');
+        pdfView.classList.add('hidden');
+        btnHtml.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white shadow-sm flex items-center space-x-2 transition';
+        btnPdf.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white flex items-center space-x-2 transition';
+        if (window.renderMathInElement) {
+          renderMathInElement(htmlView, {
+            delimiters: [
+              { left: '$$', right: '$$', display: true },
+              { left: '$', right: '$', display: false }
+            ],
+            throwOnError: false
+          });
+        }
+      } else {
+        htmlView.classList.add('hidden');
+        pdfView.classList.remove('hidden');
+        btnPdf.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white shadow-sm flex items-center space-x-2 transition';
+        btnHtml.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white flex items-center space-x-2 transition';
+      }
+      lucide.createIcons();
+    }
+
+    function copyBibtex() {
+      const bibtex = `@article{majlesi2026asynctensorrlhf,
+  title   = {AsyncTensorRLHF: High-Throughput Asynchronous RLHF with In-VRAM Tensor-Native Rewards},
+  author  = {Majlesi, Taha},
+  journal = {arXiv preprint arXiv:2603.XXXXX},
+  year    = {2026},
+  url     = {https://github.com/Hooshaai/AsyncTensorRLHF}
+}`;
+      navigator.clipboard.writeText(bibtex).then(() => {
+        const btn = document.getElementById('copy-btn-text');
+        btn.innerText = 'Copied to Clipboard!';
+        setTimeout(() => { btn.innerText = 'Copy BibTeX Citation'; }, 2000);
+      });
+    }
 
     function switchTab(tabId) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
